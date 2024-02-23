@@ -39,3 +39,17 @@ void WorldTransform::UpdateMatrixFromQuaternion()
 
 	TransferMatrix();
 }
+
+void WorldTransform::SetParent(const WorldTransform* parent) {
+	parent_ = parent;
+	if (parent_) {
+		translation_ -= parent->translation_;
+	}
+}
+
+void WorldTransform::UnsetParent() {
+	if (parent_) {
+		translation_ = { matWorld_.m[3][0],matWorld_.m[3][1],matWorld_.m[3][2] };
+	}
+	parent_ = nullptr;
+}

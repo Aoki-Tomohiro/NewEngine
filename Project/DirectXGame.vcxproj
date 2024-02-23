@@ -20,6 +20,13 @@
   </ItemGroup>
   <ItemGroup>
     <ClCompile Include="Application\Src\Game\GameManager.cpp" />
+    <ClCompile Include="Application\Src\Object\Character\BaseCharacter.cpp" />
+    <ClCompile Include="Application\Src\Object\Character\Enemy.cpp" />
+    <ClCompile Include="Application\Src\Object\Character\Player.cpp" />
+    <ClCompile Include="Application\Src\Object\Floor\Floor.cpp" />
+    <ClCompile Include="Application\Src\Object\FollowCamera\FollowCamera.cpp" />
+    <ClCompile Include="Application\Src\Object\Goal\Goal.cpp" />
+    <ClCompile Include="Application\Src\Object\Skydome\Skydome.cpp" />
     <ClCompile Include="Application\Src\Scene\GameClearScene.cpp" />
     <ClCompile Include="Application\Src\Scene\GameOverScene.cpp" />
     <ClCompile Include="Application\Src\Scene\GamePlayScene.cpp" />
@@ -99,6 +106,13 @@
   </ItemGroup>
   <ItemGroup>
     <ClInclude Include="Application\Src\Game\GameManager.h" />
+    <ClInclude Include="Application\Src\Object\Character\BaseCharacter.h" />
+    <ClInclude Include="Application\Src\Object\Character\Enemy.h" />
+    <ClInclude Include="Application\Src\Object\Character\Player.h" />
+    <ClInclude Include="Application\Src\Object\Floor\Floor.h" />
+    <ClInclude Include="Application\Src\Object\FollowCamera\FollowCamera.h" />
+    <ClInclude Include="Application\Src\Object\Goal\Goal.h" />
+    <ClInclude Include="Application\Src\Object\Skydome\Skydome.h" />
     <ClInclude Include="Application\Src\Scene\GameClearScene.h" />
     <ClInclude Include="Application\Src\Scene\GameOverScene.h" />
     <ClInclude Include="Application\Src\Scene\GamePlayScene.h" />
