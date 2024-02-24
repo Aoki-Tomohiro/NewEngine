@@ -157,6 +157,48 @@
     <Filter Include="ヘッダー ファイル\Application\Object">
       <UniqueIdentifier>{f4a52438-51f2-43f3-a85d-2f363fc43a1d}</UniqueIdentifier>
     </Filter>
+    <Filter Include="ヘッダー ファイル\Application\Object\Boss">
+      <UniqueIdentifier>{0eae5691-5588-412f-96ff-3ef6c63d2cb5}</UniqueIdentifier>
+    </Filter>
+    <Filter Include="ソース ファイル\Application\Object\Boss">
+      <UniqueIdentifier>{94b0205d-e20e-4257-ac22-d587600c73df}</UniqueIdentifier>
+    </Filter>
+    <Filter Include="ヘッダー ファイル\Application\Object\Boss\States">
+      <UniqueIdentifier>{5598892c-7554-4fde-9db0-ed109427a185}</UniqueIdentifier>
+    </Filter>
+    <Filter Include="ソース ファイル\Application\Object\Boss\States">
+      <UniqueIdentifier>{9b1e6c5c-eb99-42a8-a3bf-6803da6af349}</UniqueIdentifier>
+    </Filter>
+    <Filter Include="ソース ファイル\Application\Object\FollowCamera">
+      <UniqueIdentifier>{bedc330a-eaa7-4753-9e5f-2125307db93a}</UniqueIdentifier>
+    </Filter>
+    <Filter Include="ヘッダー ファイル\Application\Object\FollowCamera">
+      <UniqueIdentifier>{683ebf0a-1222-4529-a638-71dc8745bff4}</UniqueIdentifier>
+    </Filter>
+    <Filter Include="ソース ファイル\Application\Object\Ground">
+      <UniqueIdentifier>{1c295f4e-1109-48c6-a8f5-b14db63201fc}</UniqueIdentifier>
+    </Filter>
+    <Filter Include="ヘッダー ファイル\Application\Object\Ground">
+      <UniqueIdentifier>{ae02aeb1-af20-44f3-b967-bc18da162748}</UniqueIdentifier>
+    </Filter>
+    <Filter Include="ソース ファイル\Application\Object\LockOn">
+      <UniqueIdentifier>{37032ee5-958d-4ae0-8123-0daac9b31e77}</UniqueIdentifier>
+    </Filter>
+    <Filter Include="ヘッダー ファイル\Application\Object\LockOn">
+      <UniqueIdentifier>{53996ea9-bbb3-4c08-acad-6381c756b538}</UniqueIdentifier>
+    </Filter>
+    <Filter Include="ソース ファイル\Application\Object\Player">
+      <UniqueIdentifier>{01068cc5-87c8-4fcd-b27e-490f5be3dd6a}</UniqueIdentifier>
+    </Filter>
+    <Filter Include="ヘッダー ファイル\Application\Object\Player">
+      <UniqueIdentifier>{494b5e4d-f08d-4c37-a020-2f87767ce80c}</UniqueIdentifier>
+    </Filter>
+    <Filter Include="ソース ファイル\Application\Object\Skydome">
+      <UniqueIdentifier>{2cf6e8bd-3032-4cb6-a915-7daf3fa0396a}</UniqueIdentifier>
+    </Filter>
+    <Filter Include="ヘッダー ファイル\Application\Object\Skydome">
+      <UniqueIdentifier>{a402a6d2-ae0a-453e-874c-d3e86d207fee}</UniqueIdentifier>
+    </Filter>
   </ItemGroup>
   <ItemGroup>
     <ClCompile Include="Engine\2D\Sprite.cpp">
@@ -347,6 +389,48 @@
     </ClCompile>
     <ClCompile Include="Engine\Base\Display.cpp">
       <Filter>ソース ファイル\Engine\Base</Filter>
+    </ClCompile>
+    <ClCompile Include="Application\Src\Object\Boss\Boss.cpp">
+      <Filter>ソース ファイル\Application\Object\Boss</Filter>
+    </ClCompile>
+    <ClCompile Include="Application\Src\Object\Boss\Laser.cpp">
+      <Filter>ソース ファイル\Application\Object\Boss</Filter>
+    </ClCompile>
+    <ClCompile Include="Application\Src\Object\Boss\Missile.cpp">
+      <Filter>ソース ファイル\Application\Object\Boss</Filter>
+    </ClCompile>
+    <ClCompile Include="Application\Src\Object\Boss\States\BossStateCrashDown.cpp">
+      <Filter>ソース ファイル\Application\Object\Boss\States</Filter>
+    </ClCompile>
+    <ClCompile Include="Application\Src\Object\Boss\States\BossStateLaserAttack.cpp">
+      <Filter>ソース ファイル\Application\Object\Boss\States</Filter>
+    </ClCompile>
+    <ClCompile Include="Application\Src\Object\Boss\States\BossStateMissileAttack.cpp">
+      <Filter>ソース ファイル\Application\Object\Boss\States</Filter>
+    </ClCompile>
+    <ClCompile Include="Application\Src\Object\Boss\States\BossStateNormal.cpp">
+      <Filter>ソース ファイル\Application\Object\Boss\States</Filter>
+    </ClCompile>
+    <ClCompile Include="Application\Src\Object\Boss\States\BossStateTackle.cpp">
+      <Filter>ソース ファイル\Application\Object\Boss\States</Filter>
+    </ClCompile>
+    <ClCompile Include="Application\Src\Object\FollowCamera\FollowCamera.cpp">
+      <Filter>ソース ファイル\Application\Object\FollowCamera</Filter>
+    </ClCompile>
+    <ClCompile Include="Application\Src\Object\Ground\Ground.cpp">
+      <Filter>ソース ファイル\Application\Object\Ground</Filter>
+    </ClCompile>
+    <ClCompile Include="Application\Src\Object\LockOn\LockOn.cpp">
+      <Filter>ソース ファイル\Application\Object\LockOn</Filter>
+    </ClCompile>
+    <ClCompile Include="Application\Src\Object\Player\Player.cpp">
+      <Filter>ソース ファイル\Application\Object\Player</Filter>
+    </ClCompile>
+    <ClCompile Include="Application\Src\Object\Player\Weapon.cpp">
+      <Filter>ソース ファイル\Application\Object\Player</Filter>
+    </ClCompile>
+    <ClCompile Include="Application\Src\Object\Skydome\Skydome.cpp">
+      <Filter>ソース ファイル\Application\Object\Skydome</Filter>
     </ClCompile>
   </ItemGroup>
   <ItemGroup>
@@ -595,6 +679,51 @@
     </ClInclude>
     <ClInclude Include="Engine\Base\FrameRateController.h">
       <Filter>ヘッダー ファイル\Engine\Base</Filter>
+    </ClInclude>
+    <ClInclude Include="Application\Src\Object\Boss\Boss.h">
+      <Filter>ヘッダー ファイル\Application\Object\Boss</Filter>
+    </ClInclude>
+    <ClInclude Include="Application\Src\Object\Boss\Laser.h">
+      <Filter>ヘッダー ファイル\Application\Object\Boss</Filter>
+    </ClInclude>
+    <ClInclude Include="Application\Src\Object\Boss\Missile.h">
+      <Filter>ヘッダー ファイル\Application\Object\Boss</Filter>
+    </ClInclude>
+    <ClInclude Include="Application\Src\Object\Boss\States\BossStateCrashDown.h">
+      <Filter>ヘッダー ファイル\Application\Object\Boss\States</Filter>
+    </ClInclude>
+    <ClInclude Include="Application\Src\Object\Boss\States\BossStateLaserAttack.h">
+      <Filter>ヘッダー ファイル\Application\Object\Boss\States</Filter>
+    </ClInclude>
+    <ClInclude Include="Application\Src\Object\Boss\States\BossStateMissileAttack.h">
+      <Filter>ヘッダー ファイル\Application\Object\Boss\States</Filter>
+    </ClInclude>
+    <ClInclude Include="Application\Src\Object\Boss\States\BossStateNormal.h">
+      <Filter>ヘッダー ファイル\Application\Object\Boss\States</Filter>
+    </ClInclude>
+    <ClInclude Include="Application\Src\Object\Boss\States\BossStateTackle.h">
+      <Filter>ヘッダー ファイル\Application\Object\Boss\States</Filter>
+    </ClInclude>
+    <ClInclude Include="Application\Src\Object\Boss\States\IBossState.h">
+      <Filter>ヘッダー ファイル\Application\Object\Boss\States</Filter>
+    </ClInclude>
+    <ClInclude Include="Application\Src\Object\FollowCamera\FollowCamera.h">
+      <Filter>ヘッダー ファイル\Application\Object\FollowCamera</Filter>
+    </ClInclude>
+    <ClInclude Include="Application\Src\Object\Ground\Ground.h">
+      <Filter>ヘッダー ファイル\Application\Object\Ground</Filter>
+    </ClInclude>
+    <ClInclude Include="Application\Src\Object\LockOn\LockOn.h">
+      <Filter>ヘッダー ファイル\Application\Object\LockOn</Filter>
+    </ClInclude>
+    <ClInclude Include="Application\Src\Object\Player\Weapon.h">
+      <Filter>ヘッダー ファイル\Application\Object\Player</Filter>
+    </ClInclude>
+    <ClInclude Include="Application\Src\Object\Player\Player.h">
+      <Filter>ヘッダー ファイル\Application\Object\Player</Filter>
+    </ClInclude>
+    <ClInclude Include="Application\Src\Object\Skydome\Skydome.h">
+      <Filter>ヘッダー ファイル\Application\Object\Skydome</Filter>
     </ClInclude>
   </ItemGroup>
   <ItemGroup>

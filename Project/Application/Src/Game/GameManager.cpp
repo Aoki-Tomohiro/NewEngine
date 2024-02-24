@@ -9,6 +9,11 @@ void GameManager::Initialize()
 	sceneFactory_ = std::make_unique<SceneFactory>();
 	sceneManager_->SetSceneFactory(sceneFactory_.get());
 	sceneManager_->ChangeScene("GameTitleScene");
+
+	//Bloomの有効化
+	postEffects_->SetIsEnable(true);
+	postEffects_->GetBloom()->SetIsEnable(true);
+	postEffects_->GetBloom()->SetBlurCount(2);
 }
 
 void GameManager::Finalize()

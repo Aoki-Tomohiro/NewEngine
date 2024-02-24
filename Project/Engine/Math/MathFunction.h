@@ -16,6 +16,10 @@ namespace Mathf
 
 	float LerpShortAngle(const float& a, const float& b, float t);
 
+	float EaseInSine(float x);
+
+	float EaseInOutSine(float x);
+
 	float Norm(const Quaternion& quaternion);
 
 	Vector3 Normalize(const Vector3& v);

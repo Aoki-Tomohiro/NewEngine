@@ -1,5 +1,6 @@
 #include "MathFunction.h"
 #include <cassert>
+#include <numbers>
 
 namespace Mathf
 {
@@ -46,6 +47,18 @@ namespace Mathf
 		}
 
 		return a + theta * t;
+	}
+
+
+	float EaseInSine(float x)
+	{
+		return 1.0f - std::cos((x * std::numbers::pi_v<float>) / 2.0f);
+	}
+
+
+	float EaseInOutSine(float x)
+	{
+		return -(std::cos(std::numbers::pi_v<float> *x) - 1.0f) / 2.0f;
 	}
 
 
