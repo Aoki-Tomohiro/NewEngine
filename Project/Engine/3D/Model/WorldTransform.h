@@ -14,6 +14,10 @@ public:
 	void UpdateMatrixFromEuler();
 
 	void UpdateMatrixFromQuaternion();
+	
+	void SetParent(const WorldTransform* parent);
+
+	void UnsetParent();
 
 	UploadBuffer* GetConstantBuffer() const { return constBuff_.get(); };
 
