@@ -3,7 +3,7 @@
 
 SceneManager* SceneManager::instance_ = nullptr;
 
-SceneManager* SceneManager::GetInstance() 
+SceneManager* SceneManager::GetInstance()
 {
 	if (instance_ == nullptr)
 	{
@@ -23,6 +23,21 @@ void SceneManager::Destroy()
 
 void SceneManager::Update()
 {
+	loadingScreenVisible_ ? loadScene_->Update() : currentScene_->Update();
+}
+
+void SceneManager::Draw()
+{
+	loadingScreenVisible_ ? loadScene_->Draw() : currentScene_->Draw();
+}
+
+void SceneManager::DrawUI()
+{
+	loadingScreenVisible_ ? loadScene_->DrawUI() : currentScene_->DrawUI();
+}
+
+void SceneManager::Load()
+{
 	if (nextScene_)
 	{
 		//旧シーンの終了
@@ -41,30 +56,29 @@ void SceneManager::Update()
 
 		//シーンの初期化
 		currentScene_->Initialize();
+
+		//ロード画面の表示フラグをfalseにする
+		loadingScreenVisible_ = false;
 	}
-
-	currentScene_->Update();
-}
-
-void SceneManager::Draw()
-{
-	currentScene_->Draw();
-}
-
-void SceneManager::DrawUI()
-{
-	currentScene_->DrawUI();
 }
 
 void SceneManager::ChangeScene(const std::string& sceneName)
 {
 	assert(sceneFactory_);
 	assert(nextScene_ == nullptr);
+	if (!loadScene_)
+	{
+		loadScene_ = sceneFactory_->CreateScene("LoadScene");
+		loadScene_->Initialize();
+	}
 	nextScene_ = sceneFactory_->CreateScene(sceneName);
+	loadingScreenVisible_ = true;
 }
 
 SceneManager::~SceneManager()
 {
 	currentScene_->Finalize();
 	delete currentScene_;
+	loadScene_->Finalize();
+	delete loadScene_;
 }

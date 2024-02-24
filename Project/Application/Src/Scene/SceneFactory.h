@@ -4,6 +4,7 @@
 #include "GamePlayScene.h"
 #include "GameClearScene.h"
 #include "GameOverScene.h"
+#include "LoadScene.h"
 
 class SceneFactory : public AbstractSceneFactory
 {

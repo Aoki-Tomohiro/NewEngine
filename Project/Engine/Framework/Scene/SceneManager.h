@@ -15,9 +15,13 @@ public:
 
 	void DrawUI();
 
+	void Load();
+
 	void ChangeScene(const std::string& sceneName);
 
 	void SetSceneFactory(AbstractSceneFactory* sceneFactory) { sceneFactory_ = sceneFactory; };
+
+	const bool GetLoadingScreenVisible() const { return loadingScreenVisible_; };
 
 private:
 	SceneManager() = default;
@@ -32,6 +36,10 @@ private:
 
 	IScene* nextScene_ = nullptr;
 
+	IScene* loadScene_ = nullptr;
+
 	AbstractSceneFactory* sceneFactory_ = nullptr;
+
+	bool loadingScreenVisible_ = false;
 };
 

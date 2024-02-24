@@ -432,6 +432,9 @@
     <ClCompile Include="Application\Src\Object\Skydome\Skydome.cpp">
       <Filter>ソース ファイル\Application\Object\Skydome</Filter>
     </ClCompile>
+    <ClCompile Include="Application\Src\Scene\LoadScene.cpp">
+      <Filter>ソース ファイル\Application\Scene</Filter>
+    </ClCompile>
   </ItemGroup>
   <ItemGroup>
     <ClInclude Include="Engine\2D\Sprite.h">
@@ -724,6 +727,9 @@
     </ClInclude>
     <ClInclude Include="Application\Src\Object\Skydome\Skydome.h">
       <Filter>ヘッダー ファイル\Application\Object\Skydome</Filter>
+    </ClInclude>
+    <ClInclude Include="Application\Src\Scene\LoadScene.h">
+      <Filter>ヘッダー ファイル\Application\Scene</Filter>
     </ClInclude>
   </ItemGroup>
   <ItemGroup>

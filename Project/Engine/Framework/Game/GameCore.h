@@ -13,6 +13,8 @@
 #include "Engine/3D/Model/ModelManager.h"
 #include "Engine/3D/Lights/LightManager.h"
 #include "Engine/Utilities/D3DResourceLeakChecker.h"
+#include <condition_variable>
+#include <mutex>
 
 class GameCore
 {
@@ -57,5 +59,15 @@ protected:
 	LightManager* lightManager_ = nullptr;
 
 	std::unique_ptr<AbstractSceneFactory> sceneFactory_ = nullptr;
+
+	std::mutex mutex;
+
+	std::condition_variable condition;
+
+	std::mutex mutex2;
+
+	std::condition_variable condition2;
+
+	bool isLoading_ = false;
 };
 

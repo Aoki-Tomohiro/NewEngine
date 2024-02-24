@@ -38,6 +38,7 @@
     <ClCompile Include="Application\Src\Scene\GameOverScene.cpp" />
     <ClCompile Include="Application\Src\Scene\GamePlayScene.cpp" />
     <ClCompile Include="Application\Src\Scene\GameTitleScene.cpp" />
+    <ClCompile Include="Application\Src\Scene\LoadScene.cpp" />
     <ClCompile Include="Application\Src\Scene\SceneFactory.cpp" />
     <ClCompile Include="Engine\2D\Sprite.cpp" />
     <ClCompile Include="Engine\3D\Camera\Camera.cpp" />
@@ -132,6 +133,7 @@
     <ClInclude Include="Application\Src\Scene\GameOverScene.h" />
     <ClInclude Include="Application\Src\Scene\GamePlayScene.h" />
     <ClInclude Include="Application\Src\Scene\GameTitleScene.h" />
+    <ClInclude Include="Application\Src\Scene\LoadScene.h" />
     <ClInclude Include="Application\Src\Scene\SceneFactory.h" />
     <ClInclude Include="Engine\2D\Sprite.h" />
     <ClInclude Include="Engine\3D\Camera\Camera.h" />
