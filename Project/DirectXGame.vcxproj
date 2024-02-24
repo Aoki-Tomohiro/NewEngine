@@ -20,6 +20,20 @@
   </ItemGroup>
   <ItemGroup>
     <ClCompile Include="Application\Src\Game\GameManager.cpp" />
+    <ClCompile Include="Application\Src\Object\Boss\Boss.cpp" />
+    <ClCompile Include="Application\Src\Object\Boss\Laser.cpp" />
+    <ClCompile Include="Application\Src\Object\Boss\Missile.cpp" />
+    <ClCompile Include="Application\Src\Object\Boss\States\BossStateCrashDown.cpp" />
+    <ClCompile Include="Application\Src\Object\Boss\States\BossStateLaserAttack.cpp" />
+    <ClCompile Include="Application\Src\Object\Boss\States\BossStateMissileAttack.cpp" />
+    <ClCompile Include="Application\Src\Object\Boss\States\BossStateNormal.cpp" />
+    <ClCompile Include="Application\Src\Object\Boss\States\BossStateTackle.cpp" />
+    <ClCompile Include="Application\Src\Object\FollowCamera\FollowCamera.cpp" />
+    <ClCompile Include="Application\Src\Object\Ground\Ground.cpp" />
+    <ClCompile Include="Application\Src\Object\LockOn\LockOn.cpp" />
+    <ClCompile Include="Application\Src\Object\Player\Player.cpp" />
+    <ClCompile Include="Application\Src\Object\Player\Weapon.cpp" />
+    <ClCompile Include="Application\Src\Object\Skydome\Skydome.cpp" />
     <ClCompile Include="Application\Src\Scene\GameClearScene.cpp" />
     <ClCompile Include="Application\Src\Scene\GameOverScene.cpp" />
     <ClCompile Include="Application\Src\Scene\GamePlayScene.cpp" />
@@ -99,6 +113,21 @@
   </ItemGroup>
   <ItemGroup>
     <ClInclude Include="Application\Src\Game\GameManager.h" />
+    <ClInclude Include="Application\Src\Object\Boss\Boss.h" />
+    <ClInclude Include="Application\Src\Object\Boss\Laser.h" />
+    <ClInclude Include="Application\Src\Object\Boss\Missile.h" />
+    <ClInclude Include="Application\Src\Object\Boss\States\BossStateCrashDown.h" />
+    <ClInclude Include="Application\Src\Object\Boss\States\BossStateLaserAttack.h" />
+    <ClInclude Include="Application\Src\Object\Boss\States\BossStateMissileAttack.h" />
+    <ClInclude Include="Application\Src\Object\Boss\States\BossStateNormal.h" />
+    <ClInclude Include="Application\Src\Object\Boss\States\BossStateTackle.h" />
+    <ClInclude Include="Application\Src\Object\Boss\States\IBossState.h" />
+    <ClInclude Include="Application\Src\Object\FollowCamera\FollowCamera.h" />
+    <ClInclude Include="Application\Src\Object\Ground\Ground.h" />
+    <ClInclude Include="Application\Src\Object\LockOn\LockOn.h" />
+    <ClInclude Include="Application\Src\Object\Player\Player.h" />
+    <ClInclude Include="Application\Src\Object\Player\Weapon.h" />
+    <ClInclude Include="Application\Src\Object\Skydome\Skydome.h" />
     <ClInclude Include="Application\Src\Scene\GameClearScene.h" />
     <ClInclude Include="Application\Src\Scene\GameOverScene.h" />
     <ClInclude Include="Application\Src\Scene\GamePlayScene.h" />
