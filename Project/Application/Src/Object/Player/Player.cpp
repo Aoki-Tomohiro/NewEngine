@@ -704,7 +704,7 @@ void Player::BehaviorDashUpdate()
 
 	if (input_->IsControllerConnected())
 	{
-		if (input_->IsPressButtonEnter(XINPUT_GAMEPAD_X))
+		if (input_->IsPressButtonEnter(XINPUT_GAMEPAD_X) && !workDash_.backStep)
 		{
 			isDashAttack_ = true;
 			behaviorRequest_ = Behavior::kAttack;
