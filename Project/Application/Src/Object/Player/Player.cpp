@@ -57,12 +57,15 @@ void Player::Initialize()
 	particleSystem_ = ParticleManager::Create("Dash");
 	particleSystem_->SetModel(particleModel_.get());
 	particleSystem_->SetIsBillBoard(false);
+	justGuardParticle_ = ParticleManager::Create("JustGuard");
+	justGuardParticle_->SetTexture("DefaultParticle.png");
 
 	//オーディオの読み込み
 	swishAudioHandle_ = audio_->SoundLoadWave("Application/Resources/Sounds/Swish.wav");
 	damageAudioHandle_ = audio_->SoundLoadWave("Application/Resources/Sounds/Damage.wav");
 	dashAudioHandle_ = audio_->SoundLoadWave("Application/Resources/Sounds/Dash.wav");
 	jumpAudioHandle_ = audio_->SoundLoadWave("Application/Resources/Sounds/Jump.wav");
+	justGuardAudioHandle_ = audio_->SoundLoadWave("Application/Resources/Sounds/JustGuard.wav");
 
 	//衝突属性を設定
 	SetCollisionAttribute(kCollisionAttributePlayer);
@@ -257,9 +260,12 @@ void Player::OnCollision(Collider* collider)
 			if (behavior_ != Behavior::kDash && behavior_ != Behavior::kKnockBack)
 			{
 				//ノックバック状態にする
-				Vector3 kKnockBackSpeed = { 0.0f,0.4f,0.4f };
-				knockBackVelocity_ = Mathf::TransformNormal(kKnockBackSpeed, boss->GetWorldTransform().matWorld_);
-				behaviorRequest_ = Behavior::kKnockBack;
+				if (!workGuard_.isJustGuard_)
+				{
+					Vector3 kKnockBackSpeed = { 0.0f,0.4f,0.4f };
+					knockBackVelocity_ = Mathf::TransformNormal(kKnockBackSpeed, boss->GetWorldTransform().matWorld_);
+					behaviorRequest_ = Behavior::kKnockBack;
+				}
 
 				//無敵状態でなければ
 				if (!workInvincible_.invincibleFlag)
@@ -269,21 +275,72 @@ void Player::OnCollision(Collider* collider)
 					if (behavior_ == Behavior::kGuard)
 					{
 						damage *= 0.4f;
+						if (workGuard_.isJustGuard_)
+						{
+							damage = 0.0f;
+							audio_->SoundPlayWave(justGuardAudioHandle_, false, 0.5f);
+							for (int i = 0; i < 360; i++)
+							{
+								Vector3 velocity = { 0.0f,1.0f,0.0f };
+								velocity = Mathf::Normalize(velocity) * 0.3f;
+								velocity = Mathf::TransformNormal(velocity, Mathf::MakeRotateZMatrix(i * std::numbers::pi_v<float> / 180.0f));
+								velocity = Mathf::TransformNormal(velocity, Mathf::MakeRotateMatrix(worldTransform_.quaternion_));
+								ParticleEmitter* newEmitter = ParticleEmitterBuilder()
+									.SetDeleteTime(1.0f)
+									.SetEmitterName("JustGuard")
+									.SetPopArea({ 0.0f,0.0f,0.0f }, { 0.0f,0.0f,0.0f })
+									.SetPopAzimuth(0.0f, 0.0f)
+									.SetPopColor({ 1.0f, 1.0f, 1.0f, 1.0f }, { 1.0f, 1.0f, 1.0f, 1.0f })
+									.SetPopCount(1)
+									.SetPopElevation(0.0f, 0.0f)
+									.SetPopFrequency(2.0f)
+									.SetPopLifeTime(0.3f, 0.3f)
+									.SetPopQuaternion({ 0.0f,0.0f,0.0f,1.0f })
+									.SetPopRotation({ 0.0f,0.0f,0.0f }, { 0.0f,0.0f,0.0f })
+									.SetPopScale({ 0.1f,0.1f,0.1f }, { 0.2f,0.2f,0.2f })
+									.SetPopVelocity(velocity, velocity)
+									.SetTranslation(weapon_->GetWorldPosition())
+									.Build();
+								justGuardParticle_->AddParticleEmitter(newEmitter);
+							}
+							AccelerationField accelerationField = { { 0.0f,-0.004f,0.0f }, { {-100.0f,-100.0f,-100.0f}, {100.0f,100.0f,100.0f}},true };
+							ParticleEmitter* newEmitter = ParticleEmitterBuilder()
+								.SetDeleteTime(1.0f)
+								.SetEmitterName("JustGuard")
+								.SetAccelerationField(accelerationField)
+								.SetPopArea({ 0.0f,0.0f,0.0f }, { 0.0f,0.0f,0.0f })
+								.SetPopAzimuth(0.0f, 360.0f)
+								.SetPopColor({ 1.0f, 1.0f, 1.0f, 1.0f }, { 1.0f, 1.0f, 1.0f, 1.0f })
+								.SetPopCount(50)
+								.SetPopElevation(-90.0f, 90.0f)
+								.SetPopFrequency(2.0f)
+								.SetPopLifeTime(0.4f, 0.6f)
+								.SetPopQuaternion({ 0.0f,0.0f,0.0f,1.0f })
+								.SetPopRotation({ 0.0f,0.0f,0.0f }, { 0.0f,0.0f,0.0f })
+								.SetPopScale({ 0.1f,0.1f,0.1f }, { 0.2f,0.2f,0.2f })
+								.SetPopVelocity({0.2f,0.2f,0.2f }, { 0.4f,0.4f,0.4f })
+								.SetTranslation(weapon_->GetWorldPosition())
+								.Build();
+							justGuardParticle_->AddParticleEmitter(newEmitter);
+						}
 					}
 					hp_ -= damage;
 
-					//無敵状態にする
-					workInvincible_.invincibleFlag = true;
-					workInvincible_.invincibleTimer = 0;
+					if (!workGuard_.isJustGuard_)
+					{
+						//ヒットフラグを立てる
+						isHit_ = true;
 
-					//SEを再生
-					audio_->SoundPlayWave(damageAudioHandle_, false, 0.5f);
+						//無敵状態にする
+						workInvincible_.invincibleFlag = true;
+						workInvincible_.invincibleTimer = 0;
 
-					//ダメージスプライトのアルファ値を設定
-					damageSpriteColor_.w = 0.5f;
+						//SEを再生
+						audio_->SoundPlayWave(damageAudioHandle_, false, 0.5f);
 
-					//ヒットフラグを立てる
-					isHit_ = true;
+						//ダメージスプライトのアルファ値を設定
+						damageSpriteColor_.w = 0.5f;
+					}
 				}
 			}
 		}
@@ -305,18 +362,21 @@ void Player::OnCollision(Collider* collider)
 				}
 				hp_ -= damage;
 
-				//無敵状態にする
-				workInvincible_.invincibleFlag = true;
-				workInvincible_.invincibleTimer = 0;
+				if (!workGuard_.isJustGuard_)
+				{
+					//ヒットフラグを立てる
+					isHit_ = true;
 
-				//SEを再生
-				audio_->SoundPlayWave(damageAudioHandle_, false, 0.5f);
+					//無敵状態にする
+					workInvincible_.invincibleFlag = true;
+					workInvincible_.invincibleTimer = 0;
 
-				//ダメージスプライトのアルファ値を設定
-				damageSpriteColor_.w = 0.5f;
+					//SEを再生
+					audio_->SoundPlayWave(damageAudioHandle_, false, 0.5f);
 
-				//ヒットフラグを立てる
-				isHit_ = true;
+					//ダメージスプライトのアルファ値を設定
+					damageSpriteColor_.w = 0.5f;
+				}
 			}
 		}
 	}
@@ -337,18 +397,21 @@ void Player::OnCollision(Collider* collider)
 				}
 				hp_ -= damage;
 
-				//無敵状態にする
-				workInvincible_.invincibleFlag = true;
-				workInvincible_.invincibleTimer = 0;
+				if (!workGuard_.isJustGuard_)
+				{
+					//ヒットフラグを立てる
+					isHit_ = true;
 
-				//SEを再生
-				audio_->SoundPlayWave(damageAudioHandle_, false, 0.5f);
+					//無敵状態にする
+					workInvincible_.invincibleFlag = true;
+					workInvincible_.invincibleTimer = 0;
 
-				//ダメージスプライトのアルファ値を設定
-				damageSpriteColor_.w = 0.5f;
+					//SEを再生
+					audio_->SoundPlayWave(damageAudioHandle_, false, 0.5f);
 
-				//ヒットフラグを立てる
-				isHit_ = true;
+					//ダメージスプライトのアルファ値を設定
+					damageSpriteColor_.w = 0.5f;
+				}
 			}
 		}
 	}
@@ -2079,10 +2142,21 @@ void Player::BehaviorGuardInitialize()
 	worldTransforms[kR_Arm].rotation_.x = -std::numbers::pi_v<float> / 2.0f;
 	weapon_->SetTranslation({ 3.6f,1.4f,1.5f });
 	weapon_->SetRotation({ 1.4f,-std::numbers::pi_v<float> / 2.0f, 0.0f });
+	workGuard_.isJustGuard_ = true;
+	workGuard_.justGuardTimer_ = 0;
 }
 
 void Player::BehaviorGuardUpdate()
 {
+	if (workGuard_.justGuardTimer_ != workGuard_.kJustGuardTime)
+	{
+		workGuard_.justGuardTimer_++;
+	}
+	else
+	{
+		workGuard_.isJustGuard_ = false;
+	}
+
 	const float speed = 0.2f;
 	Move(speed);
 

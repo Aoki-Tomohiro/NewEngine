@@ -150,6 +150,24 @@ void Boss::OnCollision(Collider* collider)
 			worldTransform_.UpdateMatrixFromQuaternion();
 		}
 	}
+
+	if (collider->GetCollisionAttribute() == kCollisionAttributePlayer)
+	{
+		if (isAttack_)
+		{
+			if (gameObjectManager_->GetGameObject<Player>("Player")->GetIsJustGuard())
+			{
+				onCollision_ = true;
+				if (onCollision_ != preOnCollision_)
+				{
+					IBossState* newState = new BossStateStun();
+					newState->Initialize(this);
+					ChangeState(newState);
+					isAttack_ = false;
+				}
+			}
+		}
+	}
 }
 
 const Vector3 Boss::GetWorldPosition() const

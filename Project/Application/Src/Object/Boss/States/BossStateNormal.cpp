@@ -40,7 +40,7 @@ void BossStateNormal::Update(Boss* pBoss)
 	//攻撃処理
 	if (++attackTimer_ > attackTime_)
 	{
-		uint32_t attackNum = RandomGenerator::GetRandomInt(0, 3);
+		uint32_t attackNum = 0;
 		IBossState* newState = nullptr;
 		switch (attackNum)
 		{

@@ -69,6 +69,8 @@ public:
 
 	const Behavior& GetBehavior() const { return behavior_; };
 
+	const bool GetIsJustGuard() const { return workGuard_.isJustGuard_; };
+
 private:
 	void BehaviorRootInitialize();
 
@@ -135,7 +137,7 @@ private:
 		//ダッシュ用の媒介変数
 		int dashParameter = 0;
 		uint32_t coolTime = 0;
-		const uint32_t dashCoolTime = 30;
+		static const uint32_t dashCoolTime = 30;
 		bool backStep = false;
 		float backStepRotation = 0.0f;
 	};
@@ -156,9 +158,17 @@ private:
 	//無敵状態用ワーク
 	struct WorkInvincible
 	{
-		const uint32_t kInvincibleTime = 60;
+		static const uint32_t kInvincibleTime = 60;
 		uint32_t invincibleTimer = 0;
 		bool invincibleFlag = false;
+	};
+
+	//ガード状態用ワーク
+	struct WorkGuard
+	{
+		static const uint32_t kJustGuardTime = 10;
+		bool isJustGuard_ = false;
+		int justGuardTimer_ = 0;
 	};
 
 	//コンボの数
@@ -267,6 +277,7 @@ private:
 	//パーティクル
 	std::unique_ptr<Model> particleModel_ = nullptr;
 	ParticleSystem* particleSystem_ = nullptr;
+	ParticleSystem* justGuardParticle_ = nullptr;
 
 	//武器
 	std::unique_ptr<Model> modelWeapon_ = nullptr;
@@ -277,7 +288,12 @@ private:
 	uint32_t damageAudioHandle_ = 0;
 	uint32_t dashAudioHandle_ = 0;
 	uint32_t jumpAudioHandle_ = 0;
+	uint32_t justGuardAudioHandle_ = 0;
 
+	//ダッシュ攻撃フラグ
 	bool isDashAttack_ = false;
+
+	//ガード用ワーク
+	WorkGuard workGuard_{};
 };
 

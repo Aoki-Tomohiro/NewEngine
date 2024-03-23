@@ -66,7 +66,7 @@ void BossStateCrashDown::Update(Boss* pBoss)
 			std::abs(worldTransform_.translation_.z - targetPosition_.z),
 		};
 
-		//大体同じ座標になったら攻撃終了
+		//大体同じ座標になったら待機終了
 		if (abs.x < epsilon && abs.y < epsilon && abs.z < epsilon)
 		{
 			if (++waitTimer_ > kWaitTime)

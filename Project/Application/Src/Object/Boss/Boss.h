@@ -9,6 +9,7 @@
 #include "Application/Src/Object/Boss/States/BossStateCrashDown.h"
 #include "Application/Src/Object/Boss/States/BossStateLaserAttack.h"
 #include "Application/Src/Object/Boss/States/BossStateMissileAttack.h"
+#include "Application/Src/Object/Boss/States/BossStateStun.h"
 #include "Application/Src/Object/Boss/Missile.h"
 #include "Application/Src/Object/Boss/Laser.h"
 

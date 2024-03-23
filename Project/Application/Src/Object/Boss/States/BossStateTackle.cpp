@@ -8,7 +8,7 @@ void BossStateTackle::Initialize(Boss* pBoss)
 	pBoss->SetDamage(10.0f);
 
 	//目標座標を設定
-	Vector3 offset{ 0.0f,0.0f,6.0f };
+	Vector3 offset{ 0.0f,0.0f,10.0f };
 	offset = Mathf::TransformNormal(offset, worldTransform_.matWorld_);
 	targetPosition_ = worldTransform_.translation_ + offset;
 	if (targetPosition_.x >= 47.0f)
@@ -39,7 +39,7 @@ void BossStateTackle::Initialize(Boss* pBoss)
 	warningWorldTransform_.translation_ = (targetPosition_ + worldTransform_.translation_) / 2.0f;
 	warningWorldTransform_.translation_.y = 0.1f;
 	warningWorldTransform_.quaternion_ = worldTransform_.quaternion_;
-	warningWorldTransform_.scale_ = { worldTransform_.scale_.x,worldTransform_.scale_.y,6.0f + 3.0f + 3.0f };
+	warningWorldTransform_.scale_ = { worldTransform_.scale_.x,worldTransform_.scale_.y,10.0f + 3.0f + 3.0f };
 }
 
 void BossStateTackle::Update(Boss* pBoss)
@@ -58,7 +58,7 @@ void BossStateTackle::Update(Boss* pBoss)
 	if (isAttack_ && !isRecovery_)
 	{
 		//目標座標に攻撃
-		worldTransform_.translation_ = Mathf::Lerp(worldTransform_.translation_, targetPosition_, 0.2f);
+		worldTransform_.translation_ = Mathf::Lerp(worldTransform_.translation_, targetPosition_, 0.1f);
 
 		//大体同じ座標になったら攻撃終了
 		const float epsilon = 0.001f;
