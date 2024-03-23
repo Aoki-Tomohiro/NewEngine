@@ -36,7 +36,8 @@ private:
 
 	float maxDistance_ = 80.0f;
 
-	const float kDegreeToRadian = 3.14159265358979323846f / 180.0f;
+	const float kDegreeToRadian = 45.0f * 3.141592654f / 180.0f;
+
 	float angleRange_ = 20.0f * kDegreeToRadian;
 };
 

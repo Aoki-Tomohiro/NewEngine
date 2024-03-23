@@ -11,8 +11,8 @@ const uint32_t kCollisionAttributeLaser = 0b10000;
 //CollisionMask
 const uint32_t kCollisionMaskPlayer = 0b11010;
 const uint32_t kCollisionMaskEnemy = 0b00101;
-const uint32_t kCollisionMaskWeapon = 0b00010;
-const uint32_t kCollisionMaskMissile = 0b00001;
+const uint32_t kCollisionMaskWeapon = 0b01010;
+const uint32_t kCollisionMaskMissile = 0b00101;
 const uint32_t kCollisionMaskLaser = 0b00001;
 
 //形状

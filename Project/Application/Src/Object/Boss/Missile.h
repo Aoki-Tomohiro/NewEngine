@@ -49,5 +49,8 @@ private:
 
 	//オーディオハンドル
 	uint32_t audioHandle_ = 0;
+
+	//プレイヤーにはじかれたかどうか
+	bool isRepelled_ = false;
 };
 

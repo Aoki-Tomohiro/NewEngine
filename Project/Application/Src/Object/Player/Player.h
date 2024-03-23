@@ -17,6 +17,18 @@ class LockOn;
 class Player : public IGameObject, public Collider
 {
 public:
+	//プレイヤーの状態
+	enum class Behavior
+	{
+		kRoot,//通常状態
+		kDash,//ダッシュ状態
+		kJump,//ジャンプ中
+		kAttack,//攻撃状態
+		kAirAttack,//空中攻撃状態
+		kKnockBack,//ノックバック
+		kGuard,//ガード
+	};
+
 	void Initialize() override;
 
 	void Update() override;
@@ -47,11 +59,15 @@ public:
 
 	const uint32_t GetAttackTotalTime() const;
 
+	const uint32_t GetAirAttackTotalTime() const;
+
 	const float GetDamage() const { return workAttack_.damage; };
 
 	const float GetHP() const { return hp_; };
 
 	const bool GetIsHit() const { return isHit_; };
+
+	const Behavior& GetBehavior() const { return behavior_; };
 
 private:
 	void BehaviorRootInitialize();
@@ -76,9 +92,19 @@ private:
 
 	void AttackAnimation();
 
+	void BehaviorAirAttackInitialize();
+
+	void BehaviorAirAttackUpdate();
+
+	void AirAttackAnimation();
+
 	void BehaviorKnockBackInitialize();
 
 	void BehaviorKnockBackUpdate();
+
+	void BehaviorGuardInitialize();
+
+	void BehaviorGuardUpdate();
 
 	void Move(const float speed);
 
@@ -92,16 +118,6 @@ private:
 		kL_Arm,
 		kR_Arm,
 		kCountOfParts
-	};
-
-	//プレイヤーの状態
-	enum class Behavior
-	{
-		kRoot,//通常状態
-		kDash,//ダッシュ状態
-		kJump,//ジャンプ中
-		kAttack,//攻撃状態
-		kKnockBack,//ノックバック
 	};
 
 	//移動アニメーション用ワーク
@@ -177,7 +193,8 @@ private:
 	};
 
 	//コンボ定数表
-	static const std::array<ConstAttack, ComboNum> kConstAttacks_;
+	static const std::array<ConstAttack, ComboNum + 1> kConstAttacks_;
+	static const std::array<ConstAttack, ComboNum> kConstAirAttacks_;
 
 private:
 	//モデル
@@ -260,5 +277,7 @@ private:
 	uint32_t damageAudioHandle_ = 0;
 	uint32_t dashAudioHandle_ = 0;
 	uint32_t jumpAudioHandle_ = 0;
+
+	bool isDashAttack_ = false;
 };
 

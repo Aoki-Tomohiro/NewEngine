@@ -1,6 +1,7 @@
 #include "Missile.h"
 #include "Engine/Framework/Object/GameObjectManager.h"
 #include "Application/Src/Object/Player/Player.h"
+#include "Application/Src/Object/Boss/Boss.h"
 
 void Missile::Initialize(const Vector3& position, const Vector3& velocity)
 {
@@ -35,16 +36,19 @@ void Missile::Update()
 	Vector3 targetPosition = GameObjectManager::GetInstance()->GetGameObject<Player>("Player")->GetWorldPosition();
 	Vector3 sub = targetPosition - worldTransform_.translation_;
 
-	//距離を計算
-	float distance = Mathf::Length(sub);
+	if (!isRepelled_)
+	{
+		//距離を計算
+		float distance = Mathf::Length(sub);
 
-	//正規化
-	sub = Mathf::Normalize(sub);
-	velocity_ = Mathf::Normalize(velocity_);
+		//正規化
+		sub = Mathf::Normalize(sub);
+		velocity_ = Mathf::Normalize(velocity_);
+	}
 
 	//媒介変数の更新
 	if (trackingParameter_ < 0.1f) {
-		trackingParameter_ += 1.0f / (60.0f * 10.0f);
+		trackingParameter_ += 1.0f / (60.0f * 1.0f);
 	}
 
 	//追尾タイマーを進める
@@ -60,14 +64,14 @@ void Missile::Update()
 	}
 
 	//追捕終了していなかったら
-	if (!isTrackingComplete_)
+	if (!isTrackingComplete_ && !isRepelled_)
 	{
 		velocity_ = Mathf::Slerp(velocity_, sub, trackingParameter_);
+		const float kSpeed = 0.6f;
+		velocity_ *= kSpeed;
 	}
 
 	//移動処理
-	const float kSpeed = 0.6f;
-	velocity_ *= kSpeed;
 	worldTransform_.translation_ += velocity_;
 
 	//回転処理
@@ -92,8 +96,34 @@ void Missile::Draw(const Camera& camera)
 
 void Missile::OnCollision(Collider* collider)
 {
-	isDead_ = true;
-	Audio::GetInstance()->SoundPlayWave(audioHandle_, false, 0.5f);
+	if(collider->GetCollisionAttribute() == kCollisionAttributeWeapon && !isDead_)
+	{
+		SetCollisionAttribute(kCollisionAttributeWeapon);
+		SetCollisionMask(kCollisionMaskWeapon);
+		isRepelled_ = true;
+		const float kSpeed = 0.6f;
+		Vector3 targetPosition = GameObjectManager::GetInstance()->GetGameObject<Boss>("Boss")->GetWorldPosition();
+		Vector3 sub = targetPosition - worldTransform_.translation_;
+		sub = Mathf::Normalize(sub);
+		velocity_ = sub * kSpeed;
+	}
+
+	if (isRepelled_)
+	{
+		if (collider->GetCollisionAttribute() & kCollisionAttributeEnemy)
+		{
+			isDead_ = true;
+			Audio::GetInstance()->SoundPlayWave(audioHandle_, false, 0.5f);
+		}
+	}
+	else
+	{
+		if (collider->GetCollisionAttribute() & kCollisionAttributePlayer)
+		{
+			isDead_ = true;
+			Audio::GetInstance()->SoundPlayWave(audioHandle_, false, 0.5f);
+		}
+	}
 }
 
 const Vector3 Missile::GetWorldPosition() const

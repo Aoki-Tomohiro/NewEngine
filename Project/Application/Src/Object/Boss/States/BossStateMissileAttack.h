@@ -9,7 +9,7 @@ public:
 	//待機時間
 	static const uint32_t kWaitTime = 60;
 	//ミサイル発射間隔
-	static const uint32_t kFireInterval = 60 / 2;
+	static const uint32_t kFireInterval = 40;
 	//硬直時間
 	static const uint32_t kRecoveryTime = 60 * 2;
 

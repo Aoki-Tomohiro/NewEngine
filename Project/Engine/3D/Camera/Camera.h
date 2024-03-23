@@ -46,7 +46,7 @@ public:
 
 	Matrix4x4 matProjection_{};
 
-	float fov_ = 0.45f;
+	float fov_ = 45.0f * 3.141592654f / 180.0f;
 
 	float aspectRatio_ = 1280.0f / 720.0f;
 

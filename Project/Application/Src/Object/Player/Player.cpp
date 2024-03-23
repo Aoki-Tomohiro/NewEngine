@@ -101,8 +101,14 @@ void Player::Update()
 		case Behavior::kAttack:
 			BehaviorAttackInitialize();
 			break;
+		case Behavior::kAirAttack:
+			BehaviorAirAttackInitialize();
+			break;
 		case Behavior::kKnockBack:
 			BehaviorKnockBackInitialize();
+			break;
+		case Behavior::kGuard:
+			BehaviorGuardInitialize();
 			break;
 		}
 		behaviorRequest_ = std::nullopt;
@@ -124,8 +130,14 @@ void Player::Update()
 	case Behavior::kAttack:
 		BehaviorAttackUpdate();
 		break;
+	case Behavior::kAirAttack:
+		BehaviorAirAttackUpdate();
+		break;
 	case Behavior::kKnockBack:
 		BehaviorKnockBackUpdate();
+		break;
+	case Behavior::kGuard:
+		BehaviorGuardUpdate();
 		break;
 	}
 
@@ -175,7 +187,7 @@ void Player::Draw(const Camera& camera)
 	}
 
 	//武器の描画
-	if (behavior_ == Behavior::kAttack)
+	if (behavior_ == Behavior::kAttack || behavior_ == Behavior::kAirAttack || behavior_ == Behavior::kGuard)
 	{
 		weapon_->SetIsVisible(true);
 	}
@@ -242,7 +254,7 @@ void Player::OnCollision(Collider* collider)
 		//攻撃中の場合吹っ飛ばす
 		else
 		{
-			if (behavior_ != Behavior::kDash)
+			if (behavior_ != Behavior::kDash && behavior_ != Behavior::kKnockBack)
 			{
 				//ノックバック状態にする
 				Vector3 kKnockBackSpeed = { 0.0f,0.4f,0.4f };
@@ -253,7 +265,12 @@ void Player::OnCollision(Collider* collider)
 				if (!workInvincible_.invincibleFlag)
 				{
 					//HPを減らす
-					hp_ -= boss->GetDamage();
+					float damage = boss->GetDamage();
+					if (behavior_ == Behavior::kGuard)
+					{
+						damage *= 0.4f;
+					}
+					hp_ -= damage;
 
 					//無敵状態にする
 					workInvincible_.invincibleFlag = true;
@@ -281,7 +298,12 @@ void Player::OnCollision(Collider* collider)
 			if (!workInvincible_.invincibleFlag)
 			{
 				//HPを減らす
-				hp_ -= 10.0f;
+				float damage = 6.0f;
+				if (behavior_ == Behavior::kGuard)
+				{
+					damage *= 0.4f;
+				}
+				hp_ -= damage;
 
 				//無敵状態にする
 				workInvincible_.invincibleFlag = true;
@@ -308,7 +330,12 @@ void Player::OnCollision(Collider* collider)
 			if (!workInvincible_.invincibleFlag)
 			{
 				//HPを減らす
-				hp_ -= 10.0f;
+				float damage = 10.0f;
+				if (behavior_ == Behavior::kGuard)
+				{
+					damage *= 0.4f;
+				}
+				hp_ -= damage;
 
 				//無敵状態にする
 				workInvincible_.invincibleFlag = true;
@@ -340,6 +367,18 @@ const uint32_t Player::GetAttackTotalTime() const
 {
 	//攻撃の合計時間
 	uint32_t attackTime = kConstAttacks_[workAttack_.comboIndex].anticipationTime + kConstAttacks_[workAttack_.comboIndex].chargeTime + kConstAttacks_[workAttack_.comboIndex].swingTime;
+	if (isDashAttack_)
+	{
+		attackTime = kConstAttacks_[4].anticipationTime + kConstAttacks_[4].chargeTime + kConstAttacks_[4].swingTime;
+	}
+
+	return attackTime;
+}
+
+const uint32_t Player::GetAirAttackTotalTime() const
+{
+	//攻撃の合計時間
+	uint32_t attackTime = kConstAirAttacks_[workAttack_.comboIndex].anticipationTime + kConstAirAttacks_[workAttack_.comboIndex].chargeTime + kConstAirAttacks_[workAttack_.comboIndex].swingTime;
 
 	return attackTime;
 }
@@ -368,6 +407,10 @@ void Player::BehaviorRootInitialize()
 			.Build();
 		particleSystem_->AddParticleEmitter(emitter);
 	}
+	worldTransforms[kBody].rotation_.x = 0.0f;
+	worldTransforms[kBody].rotation_.y = 0.0f;
+	weapon_->SetTranslation({ 0.0f,0.0f,0.0f });
+	weapon_->SetRotation({ 0.0f,0.0f,0.0f });
 }
 
 void Player::BehaviorRootUpdate()
@@ -518,6 +561,21 @@ void Player::BehaviorRootUpdate()
 				}
 			}
 		}
+
+		//ガード状態に変更
+		if (input_->IsPressButtonEnter(XINPUT_GAMEPAD_LEFT_SHOULDER))
+		{
+			if (worldTransform_.translation_.y == 0.0f)
+			{
+				behaviorRequest_ = Behavior::kGuard;
+				//パーティクルを出さないようにする
+				ParticleEmitter* emitter = particleSystem_->GetParticleEmitter("Move");
+				if (emitter)
+				{
+					emitter->SetPopCount(0);
+				}
+			}
+		}
 	}
 }
 
@@ -644,6 +702,15 @@ void Player::BehaviorDashUpdate()
 		BackStepAnimation();
 	}
 
+	if (input_->IsControllerConnected())
+	{
+		if (input_->IsPressButtonEnter(XINPUT_GAMEPAD_X))
+		{
+			isDashAttack_ = true;
+			behaviorRequest_ = Behavior::kAttack;
+		}
+	}
+
 	//規定の時間経過で通常行動に戻る
 	const float dashTime = 10;
 	if (++workDash_.dashParameter >= dashTime)
@@ -690,10 +757,10 @@ void Player::BehaviorJumpUpdate()
 
 	if (input_->IsControllerConnected())
 	{
-		//攻撃行動に変更
+		//空中攻撃行動に変更
 		if (input_->IsPressButtonEnter(XINPUT_GAMEPAD_X))
 		{
-			behaviorRequest_ = Behavior::kAttack;
+			behaviorRequest_ = Behavior::kAirAttack;
 		}
 	}
 
@@ -706,7 +773,7 @@ void Player::BehaviorJumpUpdate()
 }
 
 //コンボ定数表
-const std::array<Player::ConstAttack, Player::ComboNum> Player::kConstAttacks_ = 
+const std::array<Player::ConstAttack, Player::ComboNum + 1> Player::kConstAttacks_ = 
 {
 	{
 		////振りかぶり、攻撃前硬直、攻撃振り時間、硬直、振りかぶり速度、攻撃前硬直速度、攻撃振り速度
@@ -720,10 +787,11 @@ const std::array<Player::ConstAttack, Player::ComboNum> Player::kConstAttacks_ =
 		//{0,         0,        20,        16,  0.2f,        0.0f,        0.0f },
 
 		//振りかぶり、攻撃前硬直、攻撃振り時間、硬直、振りかぶり速度、攻撃前硬直速度、攻撃振り速度
-		{5,         0,        5,         16,  0.2f,        0.0f,        0.0f },
-		{0,         0,        5,         16,  0.0f,        0.0f,        0.15f},
-		{5,         0,        25,        16,  0.2f,        0.0f,        0.0f },
-		{10,        10,       5,         22,  0.2f,        0.0f,        0.0f },
+		{5,         0,        5,         14,  0.2f,        0.0f,        0.0f },
+		{5,         0,        5,         14,  0.0f,        0.0f,        0.15f},
+		{5,         0,        25,        14,  0.2f,        0.0f,        0.0f },
+		{10,        10,       5,         20,  0.2f,        0.0f,        0.0f },
+		{5,         0,        25,        14,  0.2f,        0.0f,        0.0f },
 	}
 };
 
@@ -736,22 +804,40 @@ void Player::BehaviorAttackInitialize()
 	workAttack_.inComboPhase = 0;
 	workAttack_.inComboPhaseAttackParameter = 0.0f;
 
-	//パーツの初期値を設定
-	worldTransforms[kL_Arm].rotation_.x = 0.0f;
-	worldTransforms[kR_Arm].rotation_.x = 0.0f; 
+	if (!isDashAttack_)
+	{
+		//パーツの初期値を設定
+		worldTransforms[kL_Arm].rotation_.x = 0.0f;
+		worldTransforms[kR_Arm].rotation_.x = 0.0f;
 
-	//速度の設定
-	velocity_ = { 0.0f,0.0f,0.6f };
-	velocity_ = Mathf::TransformNormal(velocity_, worldTransform_.matWorld_);
+		//速度の設定
+		velocity_ = { 0.0f,0.0f,0.6f };
+		velocity_ = Mathf::TransformNormal(velocity_, worldTransform_.matWorld_);
 
-	//武器の初期値を設定
-	Vector3 weaponTranslation = { 0.0f,1.5f,0.0f };
-	Vector3 weaponRotation = { std::numbers::pi_v<float> / 2.0f, 0.0f, std::numbers::pi_v<float> / 2.0f };
-	weapon_->SetTranslation(weaponTranslation);
-	weapon_->SetRotation(weaponRotation);
+		//武器の初期値を設定
+		Vector3 weaponTranslation = { 0.0f,1.5f,0.0f };
+		Vector3 weaponRotation = { std::numbers::pi_v<float> / 2.0f, 0.0f, std::numbers::pi_v<float> / 2.0f };
+		weapon_->SetTranslation(weaponTranslation);
+		weapon_->SetRotation(weaponRotation);
 
-	//ダメージを設定
-	workAttack_.damage = 8;
+		//ダメージを設定
+		workAttack_.damage = 8;
+	}
+	else
+	{
+		//パーツの初期値を設定
+		worldTransforms[kL_Arm].rotation_.x = 0.0f;
+		worldTransforms[kR_Arm].rotation_.x = 0.0f;
+
+		//武器の初期値を設定
+		Vector3 weaponRotation = { std::numbers::pi_v<float> / 2.0f, 0.0f, std::numbers::pi_v<float> / 2.0f };
+		Vector3 weaponTranslation = { 0.0f,1.5f,0.0f };
+		weapon_->SetTranslation(weaponTranslation);
+		weapon_->SetRotation(weaponRotation);
+
+		//ダメージを設定
+		workAttack_.damage = 5;
+	}
 }
 
 void Player::BehaviorAttackUpdate()
@@ -783,6 +869,14 @@ void Player::BehaviorAttackUpdate()
 	uint32_t swingTime = kConstAttacks_[workAttack_.comboIndex].swingTime;
 	uint32_t recoveryTime = kConstAttacks_[workAttack_.comboIndex].recoveryTime;
 	uint32_t totalTime = anticipationTime + chargeTime + swingTime + recoveryTime;
+	if (isDashAttack_)
+	{
+		anticipationTime = kConstAttacks_[4].anticipationTime;
+		chargeTime = kConstAttacks_[4].chargeTime;
+		swingTime = kConstAttacks_[4].swingTime;
+		recoveryTime = kConstAttacks_[4].recoveryTime;
+		totalTime = anticipationTime + chargeTime + swingTime + recoveryTime;
+	}
 
 	//規定の時間経過で通常状態に戻る
 	if (++workAttack_.attackParameter > totalTime)
@@ -841,23 +935,43 @@ void Player::BehaviorAttackUpdate()
 			switch (workAttack_.comboIndex)
 			{
 			case 0:
-				//パーツの初期値を設定
-				worldTransforms[kL_Arm].rotation_.x = 0.0f;
-				worldTransforms[kR_Arm].rotation_.x = 0.0f;
+				if (!isDashAttack_)
+				{
+					//パーツの初期値を設定
+					worldTransforms[kBody].rotation_.y = 0.0f;
+					worldTransforms[kL_Arm].rotation_.x = 0.0f;
+					worldTransforms[kR_Arm].rotation_.x = 0.0f;
 
-				//速度の設定
-				velocity_ = { 0.0f,0.0f,0.6f };
-				velocity_ = Mathf::TransformNormal(velocity_, worldTransform_.matWorld_);
+					//速度の設定
+					velocity_ = { 0.0f,0.0f,0.6f };
+					velocity_ = Mathf::TransformNormal(velocity_, worldTransform_.matWorld_);
 
-				//武器の初期値を設定
-				weaponRotation = { std::numbers::pi_v<float> / 2.0f, 0.0f, std::numbers::pi_v<float> / 2.0f };
-				weaponTranslation = { 0.0f,1.5f,0.0f };
-				weapon_->SetTranslation(weaponTranslation);
-				weapon_->SetRotation(weaponRotation);
+					//武器の初期値を設定
+					weaponRotation = { std::numbers::pi_v<float> / 2.0f, 0.0f, std::numbers::pi_v<float> / 2.0f };
+					weaponTranslation = { 0.0f,1.5f,0.0f };
+					weapon_->SetTranslation(weaponTranslation);
+					weapon_->SetRotation(weaponRotation);
 
-				//ダメージを設定
-				workAttack_.damage = 8;
+					//ダメージを設定
+					workAttack_.damage = 8;
+				}
+				else
+				{
+					//パーツの初期値を設定
+					worldTransforms[kBody].rotation_.x = 0.0f;
+					worldTransforms[kBody].rotation_.y = 0.0f;
+					worldTransforms[kL_Arm].rotation_.x = 0.0f;
+					worldTransforms[kR_Arm].rotation_.x = 0.0f;
 
+					//武器の初期値を設定
+					Vector3 weaponRotation = { std::numbers::pi_v<float> / 2.0f, 0.0f, std::numbers::pi_v<float> / 2.0f };
+					Vector3 weaponTranslation = { 0.0f,1.5f,0.0f };
+					weapon_->SetTranslation(weaponTranslation);
+					weapon_->SetRotation(weaponRotation);
+
+					//ダメージを設定
+					workAttack_.damage = 5;
+				}
 				break;
 			case 1:
 				//パーツの初期値を設定
@@ -881,6 +995,7 @@ void Player::BehaviorAttackUpdate()
 				break;
 			case 2:
 				//パーツの初期値を設定
+				worldTransforms[kBody].rotation_.y = 0.0f;
 				worldTransforms[kL_Arm].rotation_.x = 0.0f;
 				worldTransforms[kR_Arm].rotation_.x = 0.0f;
 
@@ -969,6 +1084,13 @@ void Player::AttackAnimation()
 	uint32_t chargeTime = kConstAttacks_[workAttack_.comboIndex].chargeTime;
 	uint32_t swingTime = kConstAttacks_[workAttack_.comboIndex].swingTime;
 	uint32_t recoveryTime = kConstAttacks_[workAttack_.comboIndex].recoveryTime;
+	if (isDashAttack_)
+	{
+		anticipationTime = kConstAttacks_[4].anticipationTime;
+		chargeTime = kConstAttacks_[4].chargeTime;
+		swingTime = kConstAttacks_[4].swingTime;
+		recoveryTime = kConstAttacks_[4].recoveryTime;
+	}
 
 	//コンボ段階によってモーションを分岐
 	switch (workAttack_.comboIndex)
@@ -981,71 +1103,151 @@ void Player::AttackAnimation()
 			worldTransform_.translation_ += velocity_;
 		}
 
-		//振りかぶり
-		if (workAttack_.inComboPhase == kAnticipation)
+		if (!isDashAttack_)
 		{
-			workAttack_.inComboPhaseAttackParameter += 1.0f / (float)anticipationTime;
-			worldTransforms[kBody].rotation_.y = 0.0f + (-1.0f - 0.0f) * Mathf::EaseInSine(workAttack_.inComboPhaseAttackParameter);
-			worldTransforms[kL_Arm].rotation_.x = 0.0f + (-std::numbers::pi_v<float> / 2.0f - 0.0f) * Mathf::EaseInSine(workAttack_.inComboPhaseAttackParameter);
-			worldTransforms[kR_Arm].rotation_.x = 0.0f + (-std::numbers::pi_v<float> / 2.0f - 0.0f) * Mathf::EaseInSine(workAttack_.inComboPhaseAttackParameter);
-			Vector3 weaponRotation = weapon_->GetRotation();
-			weaponRotation.x = std::numbers::pi_v<float> / 2.0f + (std::numbers::pi_v<float> / 2.0f - 1.0f - std::numbers::pi_v<float> / 2.0f) * Mathf::EaseInSine(workAttack_.inComboPhaseAttackParameter);
-			weapon_->SetRotation(weaponRotation);
-
-			if (workAttack_.inComboPhaseAttackParameter >= 1.0f)
+			//振りかぶり
+			if (workAttack_.inComboPhase == kAnticipation)
 			{
-				workAttack_.inComboPhase++;
-				workAttack_.inComboPhaseAttackParameter = 0.0f;
+				workAttack_.inComboPhaseAttackParameter += 1.0f / (float)anticipationTime;
+				worldTransforms[kBody].rotation_.y = 0.0f + (-1.0f - 0.0f) * Mathf::EaseInSine(workAttack_.inComboPhaseAttackParameter);
+				worldTransforms[kL_Arm].rotation_.x = 0.0f + (-std::numbers::pi_v<float> / 2.0f - 0.0f) * Mathf::EaseInSine(workAttack_.inComboPhaseAttackParameter);
+				worldTransforms[kR_Arm].rotation_.x = 0.0f + (-std::numbers::pi_v<float> / 2.0f - 0.0f) * Mathf::EaseInSine(workAttack_.inComboPhaseAttackParameter);
+				Vector3 weaponRotation = weapon_->GetRotation();
+				weaponRotation.x = std::numbers::pi_v<float> / 2.0f + (std::numbers::pi_v<float> / 2.0f - 1.0f - std::numbers::pi_v<float> / 2.0f) * Mathf::EaseInSine(workAttack_.inComboPhaseAttackParameter);
+				weapon_->SetRotation(weaponRotation);
+
+				if (workAttack_.inComboPhaseAttackParameter >= 1.0f)
+				{
+					workAttack_.inComboPhase++;
+					workAttack_.inComboPhaseAttackParameter = 0.0f;
+				}
+			}
+
+			//チャージ
+			if (workAttack_.inComboPhase == kCharge)
+			{
+				workAttack_.inComboPhaseAttackParameter += 1.0f / (float)chargeTime;
+				if (workAttack_.inComboPhaseAttackParameter >= 1.0f)
+				{
+					workAttack_.inComboPhase++;
+					workAttack_.inComboPhaseAttackParameter = 0.0f;
+				}
+			}
+
+			//攻撃振り
+			if (workAttack_.inComboPhase == kSwing)
+			{
+				workAttack_.inComboPhaseAttackParameter += 1.0f / (float)swingTime;
+				worldTransforms[kBody].rotation_.y = -1.0f + (1.0f - -1.0f) * Mathf::EaseInSine(workAttack_.inComboPhaseAttackParameter);
+				Vector3 weaponRotation = weapon_->GetRotation();
+				weaponRotation.x = (std::numbers::pi_v<float> / 2.0f - 1.0f) + ((std::numbers::pi_v<float> / 2.0f + 1.0f) - (std::numbers::pi_v<float> / 2.0f - 1.0f)) * Mathf::EaseInSine(workAttack_.inComboPhaseAttackParameter);
+				weapon_->SetRotation(weaponRotation);
+
+				//衝突判定をつける処理
+				if (++workAttack_.collisionParameter % swingTime - 1 == 0)
+				{
+					weapon_->SetIsAttack(true);
+					audio_->SoundPlayWave(swishAudioHandle_, false, 0.5f);
+				}
+				else
+				{
+					weapon_->SetIsAttack(false);
+				}
+
+				if (workAttack_.inComboPhaseAttackParameter >= 1.0f)
+				{
+					workAttack_.inComboPhase++;
+					workAttack_.inComboPhaseAttackParameter = 0.0f;
+					workAttack_.collisionParameter = 0;
+					weapon_->SetIsAttack(false);
+				}
+			}
+
+			//硬直
+			if (workAttack_.inComboPhase == kRecovery)
+			{
+				workAttack_.inComboPhaseAttackParameter += 1.0f / (float)recoveryTime;
+				if (workAttack_.inComboPhaseAttackParameter >= 1.0f)
+				{
+					workAttack_.inComboPhaseAttackParameter = 0.0f;
+				}
 			}
 		}
-
-		//チャージ
-		if (workAttack_.inComboPhase == kCharge)
+		else
 		{
-			workAttack_.inComboPhaseAttackParameter += 1.0f / (float)chargeTime;
-			if (workAttack_.inComboPhaseAttackParameter >= 1.0f)
+			//移動処理
+			if (workAttack_.inComboPhase != kRecovery && isMove)
 			{
-				workAttack_.inComboPhase++;
-				workAttack_.inComboPhaseAttackParameter = 0.0f;
-			}
-		}
-
-		//攻撃振り
-		if (workAttack_.inComboPhase == kSwing)
-		{
-			workAttack_.inComboPhaseAttackParameter += 1.0f / (float)swingTime;
-			worldTransforms[kBody].rotation_.y = -1.0f + (1.0f - -1.0f) * Mathf::EaseInSine(workAttack_.inComboPhaseAttackParameter);
-			Vector3 weaponRotation = weapon_->GetRotation();
-			weaponRotation.x = (std::numbers::pi_v<float> / 2.0f - 1.0f) + ((std::numbers::pi_v<float> / 2.0f + 1.0f) - (std::numbers::pi_v<float> / 2.0f - 1.0f)) * Mathf::EaseInSine(workAttack_.inComboPhaseAttackParameter);
-			weapon_->SetRotation(weaponRotation);
-
-			//衝突判定をつける処理
-			if (++workAttack_.collisionParameter % swingTime - 1 == 0)
-			{
-				weapon_->SetIsAttack(true);
-				audio_->SoundPlayWave(swishAudioHandle_, false, 0.5f);
-			}
-			else
-			{
-				weapon_->SetIsAttack(false);
+				worldTransform_.translation_ += velocity_;
 			}
 
-			if (workAttack_.inComboPhaseAttackParameter >= 1.0f)
+			//振りかぶり
+			if (workAttack_.inComboPhase == kAnticipation)
 			{
-				workAttack_.inComboPhase++;
-				workAttack_.inComboPhaseAttackParameter = 0.0f;
-				workAttack_.collisionParameter = 0;
-				weapon_->SetIsAttack(false);
-			}
-		}
+				workAttack_.inComboPhaseAttackParameter += 1.0f / (float)anticipationTime;
+				worldTransforms[kBody].rotation_.y = 0.0f + (-1.0f - 0.0f) * Mathf::EaseInSine(workAttack_.inComboPhaseAttackParameter);
+				worldTransforms[kL_Arm].rotation_.x = 0.0f + (-std::numbers::pi_v<float> / 2.0f - 0.0f) * Mathf::EaseInSine(workAttack_.inComboPhaseAttackParameter);
+				worldTransforms[kR_Arm].rotation_.x = 0.0f + (-std::numbers::pi_v<float> / 2.0f - 0.0f) * Mathf::EaseInSine(workAttack_.inComboPhaseAttackParameter);
+				Vector3 weaponRotation = weapon_->GetRotation();
+				weaponRotation.x = std::numbers::pi_v<float> / 2.0f + (std::numbers::pi_v<float> / 2.0f - 1.0f - std::numbers::pi_v<float> / 2.0f) * Mathf::EaseInSine(workAttack_.inComboPhaseAttackParameter);
+				weapon_->SetRotation(weaponRotation);
 
-		//硬直
-		if (workAttack_.inComboPhase == kRecovery)
-		{
-			workAttack_.inComboPhaseAttackParameter += 1.0f / (float)recoveryTime;
-			if (workAttack_.inComboPhaseAttackParameter >= 1.0f)
+				if (workAttack_.inComboPhaseAttackParameter >= 1.0f)
+				{
+					workAttack_.inComboPhase++;
+					workAttack_.inComboPhaseAttackParameter = 0.0f;
+				}
+			}
+
+			//チャージ
+			if (workAttack_.inComboPhase == kCharge)
 			{
-				workAttack_.inComboPhaseAttackParameter = 0.0f;
+				workAttack_.inComboPhaseAttackParameter += 1.0f / (float)chargeTime;
+				if (workAttack_.inComboPhaseAttackParameter >= 1.0f)
+				{
+					workAttack_.inComboPhase++;
+					workAttack_.inComboPhaseAttackParameter = 0.0f;
+				}
+			}
+
+			//攻撃振り
+			if (workAttack_.inComboPhase == kSwing)
+			{
+				workAttack_.inComboPhaseAttackParameter += 1.0f / (float)swingTime;
+				worldTransforms[kBody].rotation_.y = -1.0f + (std::numbers::pi_v<float> *8.0f + 1.0f - -1.0f) * Mathf::EaseInSine(workAttack_.inComboPhaseAttackParameter);
+				Vector3 weaponRotation = weapon_->GetRotation();
+				weaponRotation.x = (std::numbers::pi_v<float> / 2.0f - 1.0f) + ((std::numbers::pi_v<float> *6.0f + std::numbers::pi_v<float> / 2.0f + 1.0f) - (std::numbers::pi_v<float> / 2.0f - 1.0f)) * Mathf::EaseInSine(workAttack_.inComboPhaseAttackParameter);
+				weapon_->SetRotation(weaponRotation);
+
+				//衝突判定をつける処理
+				if (++workAttack_.collisionParameter % (swingTime / 4) == 0)
+				{
+					weapon_->SetIsAttack(true);
+					audio_->SoundPlayWave(swishAudioHandle_, false, 0.5f);
+				}
+				else
+				{
+					weapon_->SetIsAttack(false);
+				}
+
+				if (workAttack_.inComboPhaseAttackParameter >= 1.0f)
+				{
+					workAttack_.inComboPhase++;
+					workAttack_.inComboPhaseAttackParameter = 0.0f;
+					workAttack_.collisionParameter = 0;
+					weapon_->SetIsAttack(false);
+				}
+			}
+
+			//硬直
+			if (workAttack_.inComboPhase == kRecovery)
+			{
+				workAttack_.inComboPhaseAttackParameter += 1.0f / (float)recoveryTime;
+				if (workAttack_.inComboPhaseAttackParameter >= 1.0f)
+				{
+					workAttack_.inComboPhaseAttackParameter = 0.0f;
+					isDashAttack_ = false;
+				}
 			}
 		}
 
@@ -1278,6 +1480,578 @@ void Player::AttackAnimation()
 	}
 }
 
+const std::array<Player::ConstAttack, Player::ComboNum> Player::kConstAirAttacks_ =
+{
+	{
+		////振りかぶり、攻撃前硬直、攻撃振り時間、硬直、振りかぶり速度、攻撃前硬直速度、攻撃振り速度
+		//{15,        10,       15,        0,   0.2f,        0.0f,        0.0f },
+		//{0,         0,        20,        0,   0.0f,        0.0f,        0.15f},
+		//{15,        10,       15,        30,  0.2f,        0.0f,        0.0f },
+
+		////振りかぶり、攻撃前硬直、攻撃振り時間、硬直、振りかぶり速度、攻撃前硬直速度、攻撃振り速度
+		//{0,         0,        5,         16,  0.2f,        0.0f,        0.0f },
+		//{0,         0,        5,         16,  0.0f,        0.0f,        0.15f},
+		//{0,         0,        20,        16,  0.2f,        0.0f,        0.0f },
+
+		//振りかぶり、攻撃前硬直、攻撃振り時間、硬直、振りかぶり速度、攻撃前硬直速度、攻撃振り速度
+		{5,         0,        5,         14,  0.2f,        0.0f,        0.0f },
+		{5,         0,        5,         14,  0.0f,        0.0f,        0.15f},
+		{5,         0,        25,        14,  0.2f,        0.0f,        0.0f },
+		{10,        10,       5,         20,  0.2f,        0.0f,        0.0f },
+	}
+};
+
+void Player::BehaviorAirAttackInitialize()
+{
+	//攻撃用の変数の初期化
+	workAttack_.attackParameter = 0;
+	workAttack_.comboIndex = 0;
+	workAttack_.comboNext = false;
+	workAttack_.inComboPhase = 0;
+	workAttack_.inComboPhaseAttackParameter = 0.0f;
+
+	//パーツの初期値を設定
+	worldTransforms[kL_Arm].rotation_.x = 0.0f;
+	worldTransforms[kR_Arm].rotation_.x = 0.0f;
+
+	//速度の設定
+	velocity_ = { 0.0f,0.0f,0.6f };
+	velocity_ = Mathf::TransformNormal(velocity_, worldTransform_.matWorld_);
+
+	//武器の初期値を設定
+	Vector3 weaponTranslation = { 0.0f,1.5f,0.0f };
+	Vector3 weaponRotation = { std::numbers::pi_v<float> / 2.0f, 0.0f, std::numbers::pi_v<float> / 2.0f };
+	weapon_->SetTranslation(weaponTranslation);
+	weapon_->SetRotation(weaponRotation);
+
+	//ダメージを設定
+	workAttack_.damage = 8;
+}
+
+void Player::BehaviorAirAttackUpdate()
+{
+	//コンボ上限に達していない
+	if (workAttack_.comboIndex < ComboNum - 1)
+	{
+		if (input_->IsControllerConnected())
+		{
+			//攻撃ボタンをトリガーしたら
+			if (input_->IsPressButtonEnter(XINPUT_GAMEPAD_X) && !workAttack_.isAttack)
+			{
+				//コンボ有効
+				workAttack_.comboNext = true;
+				workAttack_.isAttack = true;
+			}
+
+			//ボタンを離したときに攻撃フラグをfalseにする
+			if (!input_->IsPressButton(XINPUT_GAMEPAD_X))
+			{
+				workAttack_.isAttack = false;
+			}
+		}
+	}
+
+	//コンボの合計時間
+	uint32_t anticipationTime = kConstAirAttacks_[workAttack_.comboIndex].anticipationTime;
+	uint32_t chargeTime = kConstAirAttacks_[workAttack_.comboIndex].chargeTime;
+	uint32_t swingTime = kConstAirAttacks_[workAttack_.comboIndex].swingTime;
+	uint32_t recoveryTime = kConstAirAttacks_[workAttack_.comboIndex].recoveryTime;
+	uint32_t totalTime = anticipationTime + chargeTime + swingTime + recoveryTime;
+
+	//規定の時間経過で通常状態に戻る
+	if (++workAttack_.attackParameter > totalTime)
+	{
+		//コンボ継続なら次のコンボに進む
+		if (workAttack_.comboNext)
+		{
+			//コンボ継続フラグをリセット
+			workAttack_.comboNext = false;
+			//攻撃の色々な変数をリセットする
+			workAttack_.comboIndex++;
+			workAttack_.inComboPhase = 0;
+			workAttack_.attackParameter = 0;
+			workAttack_.inComboPhaseAttackParameter = 0.0f;
+
+			//コンボ切り替わりの瞬間だけ、スティック入力による方向転換を受け付ける
+			if (input_->IsControllerConnected())
+			{
+				//しきい値
+				const float threshold = 0.7f;
+
+				//移動フラグ
+				bool isRotation = false;
+
+				//移動量
+				Vector3 direction = {
+					input_->GetLeftStickX(),
+					0.0f,
+					input_->GetLeftStickY(),
+				};
+
+				//スティックの押し込みが遊び範囲を超えていたら移動フラグをtrueにする
+				if (Mathf::Length(direction) > threshold)
+				{
+					isRotation = true;
+				}
+
+				//スティックによる入力がある場合
+				if (isRotation)
+				{
+					//移動量に速さを反映
+					direction = Mathf::Normalize(direction);
+
+					//移動ベクトルをカメラの角度だけ回転する
+					Matrix4x4 rotateMatrix = Mathf::MakeRotateYMatrix(camera_->rotation_.y);
+					direction = Mathf::TransformNormal(direction, rotateMatrix);
+
+					//回転
+					Rotate(direction);
+				}
+			}
+
+			//各パーツの角度などを次のコンボ用に初期化
+			Vector3 weaponTranslation{};
+			Vector3 weaponRotation{};
+			switch (workAttack_.comboIndex)
+			{
+			case 0:
+				//パーツの初期値を設定
+				worldTransforms[kL_Arm].rotation_.x = 0.0f;
+				worldTransforms[kR_Arm].rotation_.x = 0.0f;
+
+				//速度の設定
+				velocity_ = { 0.0f,0.0f,0.6f };
+				velocity_ = Mathf::TransformNormal(velocity_, worldTransform_.matWorld_);
+
+				//武器の初期値を設定
+				weaponRotation = { std::numbers::pi_v<float> / 2.0f, 0.0f, std::numbers::pi_v<float> / 2.0f };
+				weaponTranslation = { 0.0f,1.5f,0.0f };
+				weapon_->SetTranslation(weaponTranslation);
+				weapon_->SetRotation(weaponRotation);
+
+				//ダメージを設定
+				workAttack_.damage = 8;
+
+				break;
+			case 1:
+				//パーツの初期値を設定
+				worldTransforms[kBody].rotation_.y = 0.0f;
+				worldTransforms[kL_Arm].rotation_.x = -std::numbers::pi_v<float>;
+				worldTransforms[kR_Arm].rotation_.x = -std::numbers::pi_v<float>;
+
+				//速度の設定
+				velocity_ = { 0.0f,0.0f,0.6f };
+				velocity_ = Mathf::TransformNormal(velocity_, worldTransform_.matWorld_);
+
+				//武器の初期値を設定
+				weaponRotation = { 0.0f, 0.0f, 0.0f };
+				weaponTranslation = { 0.0f,1.5f,0.0f };
+				weapon_->SetTranslation(weaponTranslation);
+				weapon_->SetRotation(weaponRotation);
+
+				//ダメージを設定
+				workAttack_.damage = 8;
+
+				break;
+			case 2:
+				//パーツの初期値を設定
+				worldTransforms[kL_Arm].rotation_.x = 0.0f;
+				worldTransforms[kR_Arm].rotation_.x = 0.0f;
+
+				//速度の設定
+				velocity_ = { 0.0f,0.0f,0.6f };
+				velocity_ = Mathf::TransformNormal(velocity_, worldTransform_.matWorld_);
+
+				//武器の初期値を設定
+				weaponRotation = { std::numbers::pi_v<float> / 2.0f, 0.0f, std::numbers::pi_v<float> / 2.0f };
+				weaponTranslation = { 0.0f,1.5f,0.0f };
+				weapon_->SetTranslation(weaponTranslation);
+				weapon_->SetRotation(weaponRotation);
+
+				//ダメージを設定
+				workAttack_.damage = 5;
+
+				break;
+			case 3:
+				//パーツの初期値を設定
+				worldTransforms[kBody].rotation_.y = 0.0f;
+				worldTransforms[kL_Arm].rotation_.x = -std::numbers::pi_v<float> / 2.0f;
+				worldTransforms[kR_Arm].rotation_.x = -std::numbers::pi_v<float> / 2.0f;
+
+				//速度の設定
+				velocity_ = { 0.0f,0.0f,0.0f };
+				velocity_ = Mathf::TransformNormal(velocity_, worldTransform_.matWorld_);
+
+				//武器の初期値を設定
+				weaponRotation = { std::numbers::pi_v<float> / 2.0f, 0.0f, 0.0f };
+				weaponTranslation = { 0.0f,1.5f,0.0f };
+				weapon_->SetTranslation(weaponTranslation);
+				weapon_->SetRotation(weaponRotation);
+
+				//ダメージを設定
+				workAttack_.damage = 30;
+
+				break;
+			}
+		}
+		//コンボ継続でないなら攻撃を終了してルートビヘイビアに戻る
+		else
+		{
+			behaviorRequest_ = Behavior::kRoot;
+			worldTransforms[kBody].rotation_ = { 0.0f,0.0f,0.0f };
+			worldTransforms[kL_Arm].rotation_ = { 0.0f,0.0f,0.0f };
+			worldTransforms[kR_Arm].rotation_ = { 0.0f,0.0f,0.0f };
+		}
+	}
+
+	//攻撃アニメーション
+	AirAttackAnimation();
+}
+
+void Player::AirAttackAnimation()
+{
+	//移動フラグ
+	bool isMove = true;
+
+	//ボスの座標を取得
+	Vector3 targetPosition = GameObjectManager::GetInstance()->GetGameObject<Boss>("Boss")->GetWorldPosition();
+
+	//差分ベクトルを計算
+	Vector3 sub = targetPosition - GetWorldPosition();
+
+	//Y軸は必要ないので0にする
+	sub.y = 0.0f;
+
+	//距離を計算
+	float distance = Mathf::Length(sub);
+
+	//閾値
+	float threshold = 16.0f;
+
+	//ボスとの距離が閾値より小さかったらボスの方向に回転させる
+	if (distance < threshold || lockOn_->ExistTarget())
+	{
+		//回転
+		Rotate(sub);
+
+		//ボスとの距離が近かったら移動しないようにする
+		isMove = (distance < 6.0f) ? false : true;
+	}
+
+	//各パラメーターの時間
+	uint32_t anticipationTime = kConstAirAttacks_[workAttack_.comboIndex].anticipationTime;
+	uint32_t chargeTime = kConstAirAttacks_[workAttack_.comboIndex].chargeTime;
+	uint32_t swingTime = kConstAirAttacks_[workAttack_.comboIndex].swingTime;
+	uint32_t recoveryTime = kConstAirAttacks_[workAttack_.comboIndex].recoveryTime;
+
+	//コンボ段階によってモーションを分岐
+	switch (workAttack_.comboIndex)
+	{
+		//攻撃1
+	case 0:
+		//移動処理
+		if (workAttack_.inComboPhase != kRecovery && isMove)
+		{
+			worldTransform_.translation_ += velocity_;
+		}
+
+		//振りかぶり
+		if (workAttack_.inComboPhase == kAnticipation)
+		{
+			workAttack_.inComboPhaseAttackParameter += 1.0f / (float)anticipationTime;
+			worldTransforms[kBody].rotation_.y = 0.0f + (-1.0f - 0.0f) * Mathf::EaseInSine(workAttack_.inComboPhaseAttackParameter);
+			worldTransforms[kL_Arm].rotation_.x = 0.0f + (-std::numbers::pi_v<float> / 2.0f - 0.0f) * Mathf::EaseInSine(workAttack_.inComboPhaseAttackParameter);
+			worldTransforms[kR_Arm].rotation_.x = 0.0f + (-std::numbers::pi_v<float> / 2.0f - 0.0f) * Mathf::EaseInSine(workAttack_.inComboPhaseAttackParameter);
+			Vector3 weaponRotation = weapon_->GetRotation();
+			weaponRotation.x = std::numbers::pi_v<float> / 2.0f + (std::numbers::pi_v<float> / 2.0f - 1.0f - std::numbers::pi_v<float> / 2.0f) * Mathf::EaseInSine(workAttack_.inComboPhaseAttackParameter);
+			weapon_->SetRotation(weaponRotation);
+
+			if (workAttack_.inComboPhaseAttackParameter >= 1.0f)
+			{
+				workAttack_.inComboPhase++;
+				workAttack_.inComboPhaseAttackParameter = 0.0f;
+			}
+		}
+
+		//チャージ
+		if (workAttack_.inComboPhase == kCharge)
+		{
+			workAttack_.inComboPhaseAttackParameter += 1.0f / (float)chargeTime;
+			if (workAttack_.inComboPhaseAttackParameter >= 1.0f)
+			{
+				workAttack_.inComboPhase++;
+				workAttack_.inComboPhaseAttackParameter = 0.0f;
+			}
+		}
+
+		//攻撃振り
+		if (workAttack_.inComboPhase == kSwing)
+		{
+			workAttack_.inComboPhaseAttackParameter += 1.0f / (float)swingTime;
+			worldTransforms[kBody].rotation_.y = -1.0f + (1.0f - -1.0f) * Mathf::EaseInSine(workAttack_.inComboPhaseAttackParameter);
+			Vector3 weaponRotation = weapon_->GetRotation();
+			weaponRotation.x = (std::numbers::pi_v<float> / 2.0f - 1.0f) + ((std::numbers::pi_v<float> / 2.0f + 1.0f) - (std::numbers::pi_v<float> / 2.0f - 1.0f)) * Mathf::EaseInSine(workAttack_.inComboPhaseAttackParameter);
+			weapon_->SetRotation(weaponRotation);
+
+			//衝突判定をつける処理
+			if (++workAttack_.collisionParameter % swingTime - 1 == 0)
+			{
+				weapon_->SetIsAttack(true);
+				audio_->SoundPlayWave(swishAudioHandle_, false, 0.5f);
+			}
+			else
+			{
+				weapon_->SetIsAttack(false);
+			}
+
+			if (workAttack_.inComboPhaseAttackParameter >= 1.0f)
+			{
+				workAttack_.inComboPhase++;
+				workAttack_.inComboPhaseAttackParameter = 0.0f;
+				workAttack_.collisionParameter = 0;
+				weapon_->SetIsAttack(false);
+			}
+		}
+
+		//硬直
+		if (workAttack_.inComboPhase == kRecovery)
+		{
+			workAttack_.inComboPhaseAttackParameter += 1.0f / (float)recoveryTime;
+			if (workAttack_.inComboPhaseAttackParameter >= 1.0f)
+			{
+				workAttack_.inComboPhaseAttackParameter = 0.0f;
+			}
+		}
+
+		break;
+		//攻撃2
+	case 1:
+		//移動処理
+		if (workAttack_.inComboPhase != kRecovery && isMove)
+		{
+			worldTransform_.translation_ += velocity_;
+		}
+
+		//振りかぶり
+		if (workAttack_.inComboPhase == kAnticipation)
+		{
+			workAttack_.inComboPhaseAttackParameter += 1.0f / (float)anticipationTime;
+			if (workAttack_.inComboPhaseAttackParameter >= 1.0f)
+			{
+				workAttack_.inComboPhase++;
+				workAttack_.inComboPhaseAttackParameter = 0.0f;
+			}
+		}
+
+		//チャージ
+		if (workAttack_.inComboPhase == kCharge)
+		{
+			workAttack_.inComboPhaseAttackParameter += 1.0f / (float)chargeTime;
+			if (workAttack_.inComboPhaseAttackParameter >= 1.0f)
+			{
+				workAttack_.inComboPhase++;
+				workAttack_.inComboPhaseAttackParameter = 0.0f;
+			}
+		}
+
+		//攻撃振り
+		if (workAttack_.inComboPhase == kSwing)
+		{
+			workAttack_.inComboPhaseAttackParameter += 1.0f / (float)swingTime;
+			worldTransforms[kL_Arm].rotation_.x = -std::numbers::pi_v<float> +(0.0f - -std::numbers::pi_v<float>) * Mathf::EaseInSine(workAttack_.inComboPhaseAttackParameter);
+			worldTransforms[kR_Arm].rotation_.x = -std::numbers::pi_v<float> +(0.0f - -std::numbers::pi_v<float>) * Mathf::EaseInSine(workAttack_.inComboPhaseAttackParameter);
+			Vector3 weaponRotation = weapon_->GetRotation();
+			weaponRotation.x = 0.0f + (std::numbers::pi_v<float> -0.0f) * Mathf::EaseInSine(workAttack_.inComboPhaseAttackParameter);
+			weapon_->SetRotation(weaponRotation);
+
+			//衝突判定をつける処理
+			if (++workAttack_.collisionParameter % swingTime - 1 == 0)
+			{
+				weapon_->SetIsAttack(true);
+				audio_->SoundPlayWave(swishAudioHandle_, false, 0.5f);
+			}
+			else
+			{
+				weapon_->SetIsAttack(false);
+			}
+
+			if (workAttack_.inComboPhaseAttackParameter >= 1.0f)
+			{
+				workAttack_.inComboPhase++;
+				workAttack_.inComboPhaseAttackParameter = 0.0f;
+				workAttack_.collisionParameter = 0;
+				weapon_->SetIsAttack(false);
+			}
+		}
+
+		//硬直
+		if (workAttack_.inComboPhase == kRecovery)
+		{
+			workAttack_.inComboPhaseAttackParameter += 1.0f / (float)recoveryTime;
+			if (workAttack_.inComboPhaseAttackParameter >= 1.0f)
+			{
+				workAttack_.inComboPhaseAttackParameter = 0.0f;
+			}
+		}
+
+		break;
+		//攻撃3
+	case 2:
+		//移動処理
+		if (workAttack_.inComboPhase != kRecovery && isMove)
+		{
+			worldTransform_.translation_ += velocity_;
+		}
+
+		//振りかぶり
+		if (workAttack_.inComboPhase == kAnticipation)
+		{
+			workAttack_.inComboPhaseAttackParameter += 1.0f / (float)anticipationTime;
+			worldTransforms[kBody].rotation_.y = 0.0f + (-1.0f - 0.0f) * Mathf::EaseInSine(workAttack_.inComboPhaseAttackParameter);
+			worldTransforms[kL_Arm].rotation_.x = 0.0f + (-std::numbers::pi_v<float> / 2.0f - 0.0f) * Mathf::EaseInSine(workAttack_.inComboPhaseAttackParameter);
+			worldTransforms[kR_Arm].rotation_.x = 0.0f + (-std::numbers::pi_v<float> / 2.0f - 0.0f) * Mathf::EaseInSine(workAttack_.inComboPhaseAttackParameter);
+			Vector3 weaponRotation = weapon_->GetRotation();
+			weaponRotation.x = std::numbers::pi_v<float> / 2.0f + (std::numbers::pi_v<float> / 2.0f - 1.0f - std::numbers::pi_v<float> / 2.0f) * Mathf::EaseInSine(workAttack_.inComboPhaseAttackParameter);
+			weapon_->SetRotation(weaponRotation);
+
+			if (workAttack_.inComboPhaseAttackParameter >= 1.0f)
+			{
+				workAttack_.inComboPhase++;
+				workAttack_.inComboPhaseAttackParameter = 0.0f;
+			}
+		}
+
+		//チャージ
+		if (workAttack_.inComboPhase == kCharge)
+		{
+			workAttack_.inComboPhaseAttackParameter += 1.0f / (float)chargeTime;
+			if (workAttack_.inComboPhaseAttackParameter >= 1.0f)
+			{
+				workAttack_.inComboPhase++;
+				workAttack_.inComboPhaseAttackParameter = 0.0f;
+			}
+		}
+
+		//攻撃振り
+		if (workAttack_.inComboPhase == kSwing)
+		{
+			workAttack_.inComboPhaseAttackParameter += 1.0f / (float)swingTime;
+			worldTransforms[kBody].rotation_.y = -1.0f + (std::numbers::pi_v<float> *8.0f + 1.0f - -1.0f) * Mathf::EaseInSine(workAttack_.inComboPhaseAttackParameter);
+			Vector3 weaponRotation = weapon_->GetRotation();
+			weaponRotation.x = (std::numbers::pi_v<float> / 2.0f - 1.0f) + ((std::numbers::pi_v<float> *6.0f + std::numbers::pi_v<float> / 2.0f + 1.0f) - (std::numbers::pi_v<float> / 2.0f - 1.0f)) * Mathf::EaseInSine(workAttack_.inComboPhaseAttackParameter);
+			weapon_->SetRotation(weaponRotation);
+
+			//衝突判定をつける処理
+			if (++workAttack_.collisionParameter % (swingTime / 4) == 0)
+			{
+				weapon_->SetIsAttack(true);
+				audio_->SoundPlayWave(swishAudioHandle_, false, 0.5f);
+			}
+			else
+			{
+				weapon_->SetIsAttack(false);
+			}
+
+			if (workAttack_.inComboPhaseAttackParameter >= 1.0f)
+			{
+				workAttack_.inComboPhase++;
+				workAttack_.inComboPhaseAttackParameter = 0.0f;
+				workAttack_.collisionParameter = 0;
+				weapon_->SetIsAttack(false);
+			}
+		}
+
+		//硬直
+		if (workAttack_.inComboPhase == kRecovery)
+		{
+			workAttack_.inComboPhaseAttackParameter += 1.0f / (float)recoveryTime;
+			if (workAttack_.inComboPhaseAttackParameter >= 1.0f)
+			{
+				workAttack_.inComboPhaseAttackParameter = 0.0f;
+			}
+		}
+
+		break;
+		//攻撃4
+	case 3:
+		//移動処理
+		if (workAttack_.inComboPhase != kRecovery && isMove)
+		{
+			worldTransform_.translation_ += velocity_;
+		}
+
+		//振りかぶり
+		if (workAttack_.inComboPhase == kAnticipation)
+		{
+			workAttack_.inComboPhaseAttackParameter += 1.0f / (float)anticipationTime;
+			worldTransforms[kL_Arm].rotation_.x = -std::numbers::pi_v<float> / 2.0f + (-std::numbers::pi_v<float> -1.0f - -std::numbers::pi_v<float> / 2.0f) * Mathf::EaseInSine(workAttack_.inComboPhaseAttackParameter);
+			worldTransforms[kR_Arm].rotation_.x = -std::numbers::pi_v<float> / 2.0f + (-std::numbers::pi_v<float> -1.0f - -std::numbers::pi_v<float> / 2.0f) * Mathf::EaseInSine(workAttack_.inComboPhaseAttackParameter);
+			Vector3 weaponRotation = weapon_->GetRotation();
+			weaponRotation.x = std::numbers::pi_v<float> / 2.0f + (-1.0f - std::numbers::pi_v<float> / 2.0f) * Mathf::EaseInSine(workAttack_.inComboPhaseAttackParameter);
+			weapon_->SetRotation(weaponRotation);
+
+			if (workAttack_.inComboPhaseAttackParameter >= 1.0f)
+			{
+				workAttack_.inComboPhase++;
+				workAttack_.inComboPhaseAttackParameter = 0.0f;
+			}
+		}
+
+		//チャージ
+		if (workAttack_.inComboPhase == kCharge)
+		{
+			workAttack_.inComboPhaseAttackParameter += 1.0f / (float)chargeTime;
+			if (workAttack_.inComboPhaseAttackParameter >= 1.0f)
+			{
+				workAttack_.inComboPhase++;
+				workAttack_.inComboPhaseAttackParameter = 0.0f;
+			}
+		}
+
+		//攻撃振り
+		if (workAttack_.inComboPhase == kSwing)
+		{
+			workAttack_.inComboPhaseAttackParameter += 1.0f / (float)swingTime;
+			worldTransforms[kL_Arm].rotation_.x = (-std::numbers::pi_v<float> -1.0f) + (0.0f - (-std::numbers::pi_v<float> -1.0f)) * Mathf::EaseInSine(workAttack_.inComboPhaseAttackParameter);
+			worldTransforms[kR_Arm].rotation_.x = (-std::numbers::pi_v<float> -1.0f) + (0.0f - (-std::numbers::pi_v<float> -1.0f)) * Mathf::EaseInSine(workAttack_.inComboPhaseAttackParameter);
+			Vector3 weaponRotation = weapon_->GetRotation();
+			weaponRotation.x = -1.0f + (std::numbers::pi_v<float> - -1.0f) * Mathf::EaseInSine(workAttack_.inComboPhaseAttackParameter);
+			weapon_->SetRotation(weaponRotation);
+
+			//衝突判定をつける処理
+			if (++workAttack_.collisionParameter % swingTime - 1 == 0)
+			{
+				weapon_->SetIsAttack(true);
+				audio_->SoundPlayWave(swishAudioHandle_, false, 0.5f);
+			}
+			else
+			{
+				weapon_->SetIsAttack(false);
+			}
+
+			if (workAttack_.inComboPhaseAttackParameter >= 1.0f)
+			{
+				workAttack_.inComboPhase++;
+				workAttack_.inComboPhaseAttackParameter = 0.0f;
+				workAttack_.collisionParameter = 0;
+				weapon_->SetIsAttack(false);
+			}
+		}
+
+		//硬直
+		if (workAttack_.inComboPhase == kRecovery)
+		{
+			workAttack_.inComboPhaseAttackParameter += 1.0f / (float)recoveryTime;
+			if (workAttack_.inComboPhaseAttackParameter >= 1.0f)
+			{
+				workAttack_.inComboPhaseAttackParameter = 0.0f;
+			}
+		}
+
+		break;
+	}
+}
+
 void Player::BehaviorKnockBackInitialize()
 {
 	worldTransforms[kBody].rotation_ = { 0.0f,0.0f,0.0f };
@@ -1296,6 +2070,61 @@ void Player::BehaviorKnockBackUpdate()
 	{
 		behaviorRequest_ = Behavior::kRoot;
 		worldTransform_.translation_.y = 1.0f;
+	}
+}
+
+void Player::BehaviorGuardInitialize()
+{
+	worldTransforms[kL_Arm].rotation_.x = -std::numbers::pi_v<float> / 2.0f;
+	worldTransforms[kR_Arm].rotation_.x = -std::numbers::pi_v<float> / 2.0f;
+	weapon_->SetTranslation({ 3.6f,1.4f,1.5f });
+	weapon_->SetRotation({ 1.4f,-std::numbers::pi_v<float> / 2.0f, 0.0f });
+}
+
+void Player::BehaviorGuardUpdate()
+{
+	const float speed = 0.2f;
+	Move(speed);
+
+	//ボスの座標を取得
+	Vector3 targetPosition = GameObjectManager::GetInstance()->GetGameObject<Boss>("Boss")->GetWorldPosition();
+
+	//差分ベクトルを計算
+	Vector3 sub = targetPosition - GetWorldPosition();
+
+	//Y軸は必要ないので0にする
+	sub.y = 0.0f;
+
+	//ロックオン中ならボスの方向に向かせる
+	if (lockOn_->ExistTarget())
+	{
+		//回転
+		Rotate(sub);
+	}
+
+	if (input_->IsControllerConnected())
+	{
+		if (input_->IsPressButtonEnter(XINPUT_GAMEPAD_X))
+		{
+			behaviorRequest_ = Behavior::kAttack;
+		}
+
+		if (input_->IsPressButtonEnter(XINPUT_GAMEPAD_A))
+		{
+			behaviorRequest_ = Behavior::kJump;
+		}
+
+		if (input_->IsPressButtonEnter(XINPUT_GAMEPAD_RIGHT_SHOULDER))
+		{
+			behaviorRequest_ = Behavior::kDash;
+		}
+
+		if (!input_->IsPressButton(XINPUT_GAMEPAD_LEFT_SHOULDER))
+		{
+			behaviorRequest_ = Behavior::kRoot;
+			worldTransforms[kL_Arm].rotation_.x = 0.0f;
+			worldTransforms[kR_Arm].rotation_.x = 0.0f;
+		}
 	}
 }
 
